@@ -49,7 +49,7 @@ export async function getAgendamentos({
     orderBy: { dataHoraInicio: 'asc' },
   })
 
-  return agendamentos.map((a) => ({
+  return agendamentos.map((a: (typeof agendamentos)[number]) => ({
     id: a.id,
     dataHoraInicio: a.dataHoraInicio.toISOString(),
     dataHoraFim: a.dataHoraFim.toISOString(),
