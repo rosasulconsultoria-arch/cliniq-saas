@@ -1,36 +1,114 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Sistema de Gestão — Clínica de Psicologia
 
-## Getting Started
+Sistema web completo para gestão de clínicas de psicologia: agendamentos, cadastros, financeiro e relatórios.
 
-First, run the development server:
+## Stack
+
+| Camada | Tecnologia |
+|---|---|
+| Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS, shadcn/ui |
+| Backend | Next.js Server Actions, Prisma 7 (PrismaPg adapter) |
+| Banco | PostgreSQL (Supabase / Neon) |
+| Autenticação | NextAuth.js v5 (JWT) |
+| E-mail | Resend |
+| Deploy | Vercel |
+
+## Setup Local
+
+### Pré-requisitos
+- Node.js 20+
+- PostgreSQL (local, Supabase ou Neon)
+- npm
+
+### 1. Instalar dependências
+
+```bash
+npm install
+```
+
+### 2. Configurar variáveis de ambiente
+
+```bash
+cp .env.example .env.local
+```
+
+Editar `.env.local`:
+
+```env
+DATABASE_URL=postgresql://usuario:senha@host:5432/clinica_psi
+NEXTAUTH_SECRET=<gere com: openssl rand -base64 32>
+NEXTAUTH_URL=http://localhost:3000
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+RESEND_API_KEY=               # opcional em dev
+EMAIL_FROM=noreply@suadominio.com
+```
+
+### 3. Banco de dados
+
+```bash
+# Gerar Prisma Client
+npx prisma generate
+
+# Criar tabelas
+npx prisma migrate dev --name init
+
+# Popular com dados iniciais (admin + categorias + salas)
+npm run db:seed
+```
+
+### 4. Rodar
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Acesse `http://localhost:3000` → login com `admin@clinica.com` / `admin123`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
 
-## Learn More
+| Comando | Descrição |
+|---|---|
+| `npm run dev` | Servidor de desenvolvimento |
+| `npm run build` | Build de produção |
+| `npm run db:seed` | Popular banco com dados iniciais |
+| `npm run db:reset` | Reset completo + seed |
+| `npx prisma studio` | Interface visual do banco |
+| `npx prisma migrate dev` | Criar/aplicar migration |
 
-To learn more about Next.js, take a look at the following resources:
+## Arquitetura
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+app/
+  (auth)/          ← páginas de login/esqueci-senha
+  (dashboard)/     ← rotas protegidas (sidebar + header)
+    agenda/
+    dashboard/
+    financeiro/
+    pacientes/
+    profissionais/
+    relatorios/
+    salas/
+    usuarios/
+  (public)/        ← agendamento público sem login
+    agendar/[slug]
+    cancelar/[token]
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+lib/               ← utilitários, db, auth, schemas
+components/        ← componentes reutilizáveis
+types/             ← tipos TypeScript compartilhados
+prisma/            ← schema e migrations
+```
 
-## Deploy on Vercel
+## Roles
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Role | Acesso |
+|---|---|
+| `ADMIN` | Tudo |
+| `PROFISSIONAL` | Própria agenda, pacientes e comissões |
+| `RECEPCAO` | Agenda + cadastros, sem financeiro |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deploy
+
+Ver [DEPLOY.md](./DEPLOY.md) para o checklist completo de deploy.

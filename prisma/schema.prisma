@@ -1,0 +1,220 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  PROFISSIONAL
+  RECEPCAO
+}
+
+enum TipoVinculo {
+  COMISSIONADO
+  LOCATARIO
+}
+
+enum StatusAgendamento {
+  AGENDADO
+  CONFIRMADO
+  REALIZADO
+  CANCELADO
+  FALTOU
+}
+
+enum OrigemAgendamento {
+  PUBLICO
+  INTERNO
+}
+
+enum TipoFinanceiro {
+  RECEITA
+  DESPESA
+  INVESTIMENTO
+}
+
+enum StatusFinanceiro {
+  PENDENTE
+  PAGO
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(RECEPCAO)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  profissional Profissional?
+
+  @@index([email])
+}
+
+model Profissional {
+  id                 String      @id @default(cuid())
+  userId             String      @unique
+  user               User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  especialidade      String
+  crp                String?
+  tipoVinculo        TipoVinculo
+  comissaoPercentual Decimal?    @db.Decimal(5, 2)
+  valorAluguelMensal Decimal?    @db.Decimal(10, 2)
+  slugAgendamento     String      @unique
+  valorConsultaPadrao Decimal?   @db.Decimal(10, 2)
+  bio                String?
+  ativo              Boolean     @default(true)
+  createdAt          DateTime    @default(now())
+
+  disponibilidades Disponibilidade[]
+  bloqueios        Bloqueio[]
+  agendamentos     Agendamento[]
+  comissoes        Comissao[]
+  alugueis         Aluguel[]
+  transacoes       TransacaoFinanceira[]
+
+  @@index([slugAgendamento])
+}
+
+model Paciente {
+  id             String    @id @default(cuid())
+  nome           String
+  cpf            String    @unique
+  telefone       String?
+  email          String?
+  dataNascimento DateTime?
+  genero         String?
+  observacoes    String?
+  ativo          Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+
+  agendamentos Agendamento[]
+
+  @@index([cpf])
+  @@index([nome])
+}
+
+model Sala {
+  id          String   @id @default(cuid())
+  nome        String   @unique
+  capacidade  Int      @default(1)
+  descricao   String?
+  ativa       Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  agendamentos Agendamento[]
+}
+
+model Disponibilidade {
+  id             String       @id @default(cuid())
+  profissionalId String
+  profissional   Profissional @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+  diaSemana      Int
+  horaInicio     String
+  horaFim        String
+
+  @@index([profissionalId])
+}
+
+model Bloqueio {
+  id             String       @id @default(cuid())
+  profissionalId String
+  profissional   Profissional @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+  dataHoraInicio DateTime
+  dataHoraFim    DateTime
+  motivo         String?
+
+  @@index([profissionalId])
+}
+
+model Agendamento {
+  id             String            @id @default(cuid())
+  profissionalId String
+  profissional   Profissional      @relation(fields: [profissionalId], references: [id], onDelete: Restrict)
+  pacienteId     String
+  paciente       Paciente          @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
+  salaId         String
+  sala           Sala              @relation(fields: [salaId], references: [id], onDelete: Restrict)
+  dataHoraInicio DateTime
+  dataHoraFim    DateTime
+  status         StatusAgendamento @default(AGENDADO)
+  valor          Decimal           @db.Decimal(10, 2)
+  origem         OrigemAgendamento @default(INTERNO)
+  observacoes    String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  comissao   Comissao?
+  transacoes TransacaoFinanceira[]
+
+  @@index([dataHoraInicio])
+  @@index([profissionalId])
+  @@index([pacienteId])
+  @@index([salaId])
+}
+
+model CategoriaFinanceira {
+  id   String         @id @default(cuid())
+  nome String
+  tipo TipoFinanceiro
+  cor  String
+
+  transacoes TransacaoFinanceira[]
+}
+
+model TransacaoFinanceira {
+  id             String              @id @default(cuid())
+  tipo           TipoFinanceiro
+  categoriaId    String
+  categoria      CategoriaFinanceira @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+  descricao      String
+  valor          Decimal             @db.Decimal(10, 2)
+  data           DateTime
+  formaPagamento String?
+  status         StatusFinanceiro    @default(PENDENTE)
+  dataPagamento  DateTime?
+  profissionalId String?
+  profissional   Profissional?       @relation(fields: [profissionalId], references: [id], onDelete: SetNull)
+  agendamentoId  String?
+  agendamento    Agendamento?        @relation(fields: [agendamentoId], references: [id], onDelete: SetNull)
+  observacoes    String?
+  createdAt      DateTime            @default(now())
+
+  @@index([data])
+  @@index([tipo])
+  @@index([profissionalId])
+}
+
+model Comissao {
+  id             String           @id @default(cuid())
+  profissionalId String
+  profissional   Profissional     @relation(fields: [profissionalId], references: [id], onDelete: Restrict)
+  agendamentoId  String           @unique
+  agendamento    Agendamento      @relation(fields: [agendamentoId], references: [id], onDelete: Restrict)
+  valorBruto     Decimal          @db.Decimal(10, 2)
+  percentual     Decimal          @db.Decimal(5, 2)
+  valorComissao  Decimal          @db.Decimal(10, 2)
+  valorClinica   Decimal          @db.Decimal(10, 2)
+  status         StatusFinanceiro @default(PENDENTE)
+  dataPagamento  DateTime?
+
+  @@index([profissionalId])
+}
+
+model Aluguel {
+  id             String           @id @default(cuid())
+  profissionalId String
+  profissional   Profissional     @relation(fields: [profissionalId], references: [id], onDelete: Restrict)
+  mesReferencia  DateTime         @db.Date
+  valor          Decimal          @db.Decimal(10, 2)
+  status         StatusFinanceiro @default(PENDENTE)
+  dataPagamento  DateTime?
+
+  @@index([profissionalId])
+  @@index([mesReferencia])
+}
