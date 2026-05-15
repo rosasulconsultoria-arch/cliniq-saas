@@ -46,7 +46,8 @@ export default async function AgendaPage() {
     }),
   ])
 
-  const agendamentosSerializados = agendamentos.map((a) => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const agendamentosSerializados = (agendamentos as any[]).map((a) => ({
     id: a.id,
     dataHoraInicio: a.dataHoraInicio.toISOString(),
     dataHoraFim: a.dataHoraFim.toISOString(),
@@ -59,7 +60,8 @@ export default async function AgendaPage() {
     sala: { id: a.salaId, nome: a.sala.nome },
   }))
 
-  const profissionaisSerializados = profissionais.map((p) => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const profissionaisSerializados = (profissionais as any[]).map((p) => ({
     id: p.id,
     nome: p.user.name,
     valorConsultaPadrao: p.valorConsultaPadrao ? Number(p.valorConsultaPadrao) : null,

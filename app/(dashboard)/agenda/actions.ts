@@ -49,7 +49,8 @@ export async function getAgendamentos({
     orderBy: { dataHoraInicio: 'asc' },
   })
 
-  return agendamentos.map((a: (typeof agendamentos)[number]) => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (agendamentos as any[]).map((a) => ({
     id: a.id,
     dataHoraInicio: a.dataHoraInicio.toISOString(),
     dataHoraFim: a.dataHoraFim.toISOString(),
