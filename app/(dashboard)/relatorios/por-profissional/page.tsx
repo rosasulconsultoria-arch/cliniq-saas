@@ -14,13 +14,7 @@ export default async function RelatorioPorProfissionalPage({ searchParams }: Pro
   const dados = await getFaturamentoPorProfissional(inicio, fim)
   const total = dados.reduce((s, r) => s + r.faturamento, 0)
 
-  async function csvAction() {
-    'use server'
-    const { getFaturamentoPorProfissional: getFat } = await import('@/lib/relatorios')
-    const rows = await getFat(inicio, fim)
-    const header = 'Profissional,Consultas,Faturamento'
-    return [header, ...rows.map(d => [`"${d.profissional}"`, d.consultas, d.faturamento.toFixed(2)].join(','))].join('\n')
-  }
+  const csvHref = `/api/relatorios/csv?tipo=por-profissional&inicio=${inicio}&fim=${fim}`
 
   return (
     <div className="space-y-6">
@@ -31,7 +25,7 @@ export default async function RelatorioPorProfissionalPage({ searchParams }: Pro
         </p>
         <div className="flex gap-2">
           <Suspense><PeriodoRelatorio /></Suspense>
-          <ExportButtons onExportCSV={csvAction} filename="por-profissional" />
+          <ExportButtons csvHref={csvHref} filename="por-profissional" />
         </div>
       </div>
 

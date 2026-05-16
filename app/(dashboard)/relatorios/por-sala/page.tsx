@@ -14,13 +14,7 @@ export default async function RelatorioPorSalaPage({ searchParams }: Props) {
   const dados = await getFaturamentoPorSala(inicio, fim)
   const maxFat = Math.max(...dados.map(d => d.faturamento), 1)
 
-  async function csvAction() {
-    'use server'
-    const { getFaturamentoPorSala: getFat } = await import('@/lib/relatorios')
-    const rows = await getFat(inicio, fim)
-    const header = 'Sala,Consultas,Faturamento'
-    return [header, ...rows.map(d => [`"${d.sala}"`, d.consultas, d.faturamento.toFixed(2)].join(','))].join('\n')
-  }
+  const csvHref = `/api/relatorios/csv?tipo=por-sala&inicio=${inicio}&fim=${fim}`
 
   return (
     <div className="space-y-6">
@@ -28,7 +22,7 @@ export default async function RelatorioPorSalaPage({ searchParams }: Props) {
         <p className="text-sm text-muted-foreground">{dados.length} sala(s) com agendamentos no período</p>
         <div className="flex gap-2">
           <Suspense><PeriodoRelatorio /></Suspense>
-          <ExportButtons onExportCSV={csvAction} filename="por-sala" />
+          <ExportButtons csvHref={csvHref} filename="por-sala" />
         </div>
       </div>
       <div className="rounded-lg border bg-card">

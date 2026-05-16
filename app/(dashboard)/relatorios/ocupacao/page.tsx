@@ -14,13 +14,7 @@ export default async function RelatorioOcupacaoPage({ searchParams }: Props) {
   const { inicio, fim } = periodoToRange(preset, getSearchParam(searchParams.de), getSearchParam(searchParams.ate))
   const dados = await getOcupacaoPorSala(inicio, fim)
 
-  async function csvAction() {
-    'use server'
-    const { getOcupacaoPorSala: get } = await import('@/lib/relatorios')
-    const rows = await get(inicio, fim)
-    const header = 'Sala,Agendamentos,Realizados,Slots Disponíveis,Taxa (%)'
-    return [header, ...rows.map(d => [`"${d.sala}"`, d.agendado, d.realizado, d.slotsTotal, d.taxa.toFixed(1)].join(','))].join('\n')
-  }
+  const csvHref = `/api/relatorios/csv?tipo=ocupacao&inicio=${inicio}&fim=${fim}`
 
   function taxaColor(taxa: number) {
     if (taxa >= 70) return 'border-emerald-400 text-emerald-600'
@@ -34,7 +28,7 @@ export default async function RelatorioOcupacaoPage({ searchParams }: Props) {
         <p className="text-sm text-muted-foreground">{dados.length} sala(s) ativa(s)</p>
         <div className="flex gap-2">
           <Suspense><PeriodoRelatorio /></Suspense>
-          <ExportButtons onExportCSV={csvAction} filename="ocupacao-salas" />
+          <ExportButtons csvHref={csvHref} filename="ocupacao-salas" />
         </div>
       </div>
       <div className="rounded-lg border bg-card">

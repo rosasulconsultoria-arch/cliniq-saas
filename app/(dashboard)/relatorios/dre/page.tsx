@@ -25,20 +25,7 @@ export default async function RelatorioDREPage({ searchParams }: Props) {
   const { inicio, fim } = periodoToRange(preset, getSearchParam(searchParams.de), getSearchParam(searchParams.ate))
   const d = await getDRE(inicio, fim)
 
-  async function csvAction() {
-    'use server'
-    const { getDRE: get } = await import('@/lib/relatorios')
-    const r = await get(inicio, fim)
-    return [
-      'Item,Valor',
-      `Receitas,${r.receitas.toFixed(2)}`,
-      `Despesas Operacionais,-${r.despesas.toFixed(2)}`,
-      `Comissões Pagas,-${r.totalComissoes.toFixed(2)}`,
-      `Receita de Aluguéis,${r.totalAlugueis.toFixed(2)}`,
-      `Investimentos,-${r.investimentos.toFixed(2)}`,
-      `Lucro Líquido,${r.lucro.toFixed(2)}`,
-    ].join('\n')
-  }
+  const csvHref = `/api/relatorios/csv?tipo=dre&inicio=${inicio}&fim=${fim}`
 
   return (
     <div className="space-y-6">
@@ -46,7 +33,7 @@ export default async function RelatorioDREPage({ searchParams }: Props) {
         <p className="text-sm text-muted-foreground">DRE Simplificado — Demonstrativo de Resultado</p>
         <div className="flex gap-2">
           <Suspense><PeriodoRelatorio /></Suspense>
-          <ExportButtons onExportCSV={csvAction} filename="dre" />
+          <ExportButtons csvHref={csvHref} filename="dre" />
         </div>
       </div>
 

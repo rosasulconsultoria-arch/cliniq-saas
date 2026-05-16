@@ -5,20 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 import { PacientesChart } from '@/components/relatorios/pacientes-chart'
 
-async function exportCSV() {
-  'use server'
-  const { getPacientesAtivos: get } = await import('@/lib/relatorios')
-  const d = await get()
-  return [
-    'Métrica,Valor',
-    `Total de Cadastros,${d.totalCadastros}`,
-    `Cadastros Ativos,${d.ativos}`,
-    `Cadastros Inativos,${d.inativos}`,
-    `Com consulta nos últimos 90 dias,${d.ativosRecentes}`,
-    `Sem consulta há mais de 90 dias,${d.inativosLongos}`,
-  ].join('\n')
-}
-
 export default async function RelatorioPacientesPage() {
   const d = await getPacientesAtivos()
 
@@ -34,7 +20,7 @@ export default async function RelatorioPacientesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">Situação atual dos pacientes cadastrados</p>
-        <ExportButtons onExportCSV={exportCSV} filename="pacientes" />
+        <ExportButtons csvHref="/api/relatorios/csv?tipo=pacientes" filename="pacientes" />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">

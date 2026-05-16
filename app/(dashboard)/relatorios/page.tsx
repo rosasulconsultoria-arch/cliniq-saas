@@ -18,20 +18,7 @@ export default async function RelatorioFaturamentoPage({ searchParams }: Props) 
   const total = dados.reduce((s, r) => s + r.valor, 0)
   const pago = dados.filter(r => r.status === 'PAGO').reduce((s, r) => s + r.valor, 0)
 
-  async function csvAction() {
-    'use server'
-    const { getFaturamentoPorPeriodo: getFat } = await import('@/lib/relatorios')
-    const rows = await getFat(inicio, fim)
-    const header = 'Data,Descrição,Categoria,Forma Pagamento,Valor,Status'
-    return [header, ...rows.map(d => [
-      format(d.data, 'dd/MM/yyyy'),
-      `"${d.descricao}"`,
-      d.categoria.nome,
-      d.formaPagamento ?? '',
-      d.valor.toFixed(2),
-      d.status,
-    ].join(','))].join('\n')
-  }
+  const csvHref = `/api/relatorios/csv?tipo=faturamento&inicio=${inicio}&fim=${fim}`
 
   return (
     <div className="space-y-6">
@@ -45,7 +32,7 @@ export default async function RelatorioFaturamentoPage({ searchParams }: Props) 
         </div>
         <div className="flex gap-2">
           <Suspense><PeriodoRelatorio /></Suspense>
-          <ExportButtons onExportCSV={csvAction} filename="faturamento" />
+          <ExportButtons csvHref={csvHref} filename="faturamento" />
         </div>
       </div>
 

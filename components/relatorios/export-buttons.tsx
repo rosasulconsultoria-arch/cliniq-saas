@@ -1,36 +1,37 @@
 'use client'
 
-import { useTransition } from 'react'
+import { useState } from 'react'
 import { toast } from 'sonner'
 import { Download, Printer, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 interface Props {
-  onExportCSV: () => Promise<string>
+  csvHref: string
   filename?: string
   onPrint?: () => void
 }
 
-export function ExportButtons({ onExportCSV, filename = 'relatorio', onPrint }: Props) {
-  const [isPending, startTransition] = useTransition()
+export function ExportButtons({ csvHref, filename = 'relatorio', onPrint }: Props) {
+  const [isPending, setIsPending] = useState(false)
 
-  function handleCSV() {
-    startTransition(async () => {
-      try {
-        const csv = await onExportCSV()
-        const bom = '﻿'
-        const blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8' })
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = `${filename}.csv`
-        a.click()
-        URL.revokeObjectURL(url)
-        toast.success('CSV exportado!')
-      } catch {
-        toast.error('Erro ao exportar CSV')
-      }
-    })
+  async function handleCSV() {
+    setIsPending(true)
+    try {
+      const res = await fetch(csvHref)
+      if (!res.ok) throw new Error('Erro ao gerar CSV')
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${filename}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+      toast.success('CSV exportado!')
+    } catch {
+      toast.error('Erro ao exportar CSV')
+    } finally {
+      setIsPending(false)
+    }
   }
 
   function handlePrint() {

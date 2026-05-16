@@ -14,13 +14,7 @@ export default async function RelatorioDespesasCategoriaPage({ searchParams }: P
   const dados = await getDespesasPorCategoria(inicio, fim)
   const total = dados.reduce((s, r) => s + r.total, 0)
 
-  async function csvAction() {
-    'use server'
-    const { getDespesasPorCategoria: getFat } = await import('@/lib/relatorios')
-    const rows = await getFat(inicio, fim)
-    const header = 'Categoria,Total,Pago,Pendente'
-    return [header, ...rows.map(d => [`"${d.nome}"`, d.total.toFixed(2), d.pago.toFixed(2), d.pendente.toFixed(2)].join(','))].join('\n')
-  }
+  const csvHref = `/api/relatorios/csv?tipo=despesas-categoria&inicio=${inicio}&fim=${fim}`
 
   return (
     <div className="space-y-6">
@@ -28,7 +22,7 @@ export default async function RelatorioDespesasCategoriaPage({ searchParams }: P
         <p className="text-sm text-muted-foreground">Total despesas: <span className="font-semibold text-red-500">{formatBRL(total)}</span></p>
         <div className="flex gap-2">
           <Suspense><PeriodoRelatorio /></Suspense>
-          <ExportButtons onExportCSV={csvAction} filename="despesas-categoria" />
+          <ExportButtons csvHref={csvHref} filename="despesas-categoria" />
         </div>
       </div>
       <div className="grid gap-6 lg:grid-cols-2">
