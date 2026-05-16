@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { getDRE } from '@/lib/relatorios'
-import { periodoToRange, PeriodoRelatorio } from '@/components/relatorios/periodo-relatorio'
+import { periodoToRange } from '@/lib/periodo-utils'
+import { PeriodoRelatorio } from '@/components/relatorios/periodo-relatorio'
 import { ExportButtons } from '@/components/relatorios/export-buttons'
 import { getSearchParam, formatBRL } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
