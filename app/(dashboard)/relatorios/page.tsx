@@ -12,22 +12,6 @@ import { getSearchParam, formatBRL } from '@/lib/utils'
 
 interface Props { searchParams: Record<string, string | string[] | undefined> }
 
-async function exportCSV(inicio: string, fim: string) {
-  'use server'
-  const { getFaturamentoPorPeriodo: getFat } = await import('@/lib/relatorios')
-  const dados = await getFat(inicio, fim)
-  const header = 'Data,Descrição,Categoria,Forma Pagamento,Valor,Status'
-  const rows = dados.map(d => [
-    format(d.data, 'dd/MM/yyyy'),
-    `"${d.descricao}"`,
-    d.categoria.nome,
-    d.formaPagamento ?? '',
-    d.valor.toFixed(2),
-    d.status,
-  ].join(','))
-  return [header, ...rows].join('\n')
-}
-
 export default async function RelatorioFaturamentoPage({ searchParams }: Props) {
   const preset = getSearchParam(searchParams.periodo, 'mes_atual')
   const { inicio, fim } = periodoToRange(preset, getSearchParam(searchParams.de), getSearchParam(searchParams.ate))
@@ -36,7 +20,20 @@ export default async function RelatorioFaturamentoPage({ searchParams }: Props) 
   const total = dados.reduce((s, r) => s + r.valor, 0)
   const pago = dados.filter(r => r.status === 'PAGO').reduce((s, r) => s + r.valor, 0)
 
-  const csvAction = exportCSV.bind(null, inicio, fim)
+  async function csvAction() {
+    'use server'
+    const { getFaturamentoPorPeriodo: getFat } = await import('@/lib/relatorios')
+    const rows = await getFat(inicio, fim)
+    const header = 'Data,Descrição,Categoria,Forma Pagamento,Valor,Status'
+    return [header, ...rows.map(d => [
+      format(d.data, 'dd/MM/yyyy'),
+      `"${d.descricao}"`,
+      d.categoria.nome,
+      d.formaPagamento ?? '',
+      d.valor.toFixed(2),
+      d.status,
+    ].join(','))].join('\n')
+  }
 
   return (
     <div className="space-y-6">

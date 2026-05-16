@@ -8,20 +8,19 @@ import { Progress } from '@/components/ui/progress'
 
 interface Props { searchParams: Record<string, string | string[] | undefined> }
 
-async function exportCSV(ini: string, fi: string) {
-  'use server'
-  const { getFaturamentoPorSala: getFat } = await import('@/lib/relatorios')
-  const dados = await getFat(ini, fi)
-  const header = 'Sala,Consultas,Faturamento'
-  return [header, ...dados.map(d => [`"${d.sala}"`, d.consultas, d.faturamento.toFixed(2)].join(','))].join('\n')
-}
-
 export default async function RelatorioPorSalaPage({ searchParams }: Props) {
   const preset = getSearchParam(searchParams.periodo, 'mes_atual')
   const { inicio, fim } = periodoToRange(preset, getSearchParam(searchParams.de), getSearchParam(searchParams.ate))
   const dados = await getFaturamentoPorSala(inicio, fim)
   const maxFat = Math.max(...dados.map(d => d.faturamento), 1)
-  const csvAction = exportCSV.bind(null, inicio, fim)
+
+  async function csvAction() {
+    'use server'
+    const { getFaturamentoPorSala: getFat } = await import('@/lib/relatorios')
+    const rows = await getFat(inicio, fim)
+    const header = 'Sala,Consultas,Faturamento'
+    return [header, ...rows.map(d => [`"${d.sala}"`, d.consultas, d.faturamento.toFixed(2)].join(','))].join('\n')
+  }
 
   return (
     <div className="space-y-6">

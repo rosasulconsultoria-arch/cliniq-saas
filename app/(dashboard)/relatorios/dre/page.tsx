@@ -9,21 +9,6 @@ import { cn } from '@/lib/utils'
 
 interface Props { searchParams: Record<string, string | string[] | undefined> }
 
-async function exportCSV(ini: string, fi: string) {
-  'use server'
-  const { getDRE: get } = await import('@/lib/relatorios')
-  const d = await get(ini, fi)
-  return [
-    'Item,Valor',
-    `Receitas,${d.receitas.toFixed(2)}`,
-    `Despesas Operacionais,-${d.despesas.toFixed(2)}`,
-    `Comissões Pagas,-${d.totalComissoes.toFixed(2)}`,
-    `Receita de Aluguéis,${d.totalAlugueis.toFixed(2)}`,
-    `Investimentos,-${d.investimentos.toFixed(2)}`,
-    `Lucro Líquido,${d.lucro.toFixed(2)}`,
-  ].join('\n')
-}
-
 function DRERow({ label, valor, destaque = false, negativo = false, subtotal = false }: { label: string; valor: number; destaque?: boolean; negativo?: boolean; subtotal?: boolean }) {
   return (
     <div className={cn('flex items-center justify-between py-3 px-4', subtotal && 'bg-muted/40 rounded-lg', destaque && 'font-bold text-base')}>
@@ -39,7 +24,21 @@ export default async function RelatorioDREPage({ searchParams }: Props) {
   const preset = getSearchParam(searchParams.periodo, 'mes_atual')
   const { inicio, fim } = periodoToRange(preset, getSearchParam(searchParams.de), getSearchParam(searchParams.ate))
   const d = await getDRE(inicio, fim)
-  const csvAction = exportCSV.bind(null, inicio, fim)
+
+  async function csvAction() {
+    'use server'
+    const { getDRE: get } = await import('@/lib/relatorios')
+    const r = await get(inicio, fim)
+    return [
+      'Item,Valor',
+      `Receitas,${r.receitas.toFixed(2)}`,
+      `Despesas Operacionais,-${r.despesas.toFixed(2)}`,
+      `Comissões Pagas,-${r.totalComissoes.toFixed(2)}`,
+      `Receita de Aluguéis,${r.totalAlugueis.toFixed(2)}`,
+      `Investimentos,-${r.investimentos.toFixed(2)}`,
+      `Lucro Líquido,${r.lucro.toFixed(2)}`,
+    ].join('\n')
+  }
 
   return (
     <div className="space-y-6">

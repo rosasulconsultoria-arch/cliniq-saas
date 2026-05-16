@@ -8,21 +8,19 @@ import { PorProfissionalChart } from '@/components/relatorios/por-profissional-c
 
 interface Props { searchParams: Record<string, string | string[] | undefined> }
 
-async function exportCSV(inicio: string, fim: string) {
-  'use server'
-  const { getFaturamentoPorProfissional: getFat } = await import('@/lib/relatorios')
-  const dados = await getFat(inicio, fim)
-  const header = 'Profissional,Consultas,Faturamento'
-  const rows = dados.map(d => [`"${d.profissional}"`, d.consultas, d.faturamento.toFixed(2)].join(','))
-  return [header, ...rows].join('\n')
-}
-
 export default async function RelatorioPorProfissionalPage({ searchParams }: Props) {
   const preset = getSearchParam(searchParams.periodo, 'mes_atual')
   const { inicio, fim } = periodoToRange(preset, getSearchParam(searchParams.de), getSearchParam(searchParams.ate))
   const dados = await getFaturamentoPorProfissional(inicio, fim)
   const total = dados.reduce((s, r) => s + r.faturamento, 0)
-  const csvAction = exportCSV.bind(null, inicio, fim)
+
+  async function csvAction() {
+    'use server'
+    const { getFaturamentoPorProfissional: getFat } = await import('@/lib/relatorios')
+    const rows = await getFat(inicio, fim)
+    const header = 'Profissional,Consultas,Faturamento'
+    return [header, ...rows.map(d => [`"${d.profissional}"`, d.consultas, d.faturamento.toFixed(2)].join(','))].join('\n')
+  }
 
   return (
     <div className="space-y-6">

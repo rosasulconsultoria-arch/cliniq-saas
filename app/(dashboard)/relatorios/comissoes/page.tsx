@@ -8,21 +8,20 @@ import { Progress } from '@/components/ui/progress'
 
 interface Props { searchParams: Record<string, string | string[] | undefined> }
 
-async function exportCSV(ini: string, fi: string) {
-  'use server'
-  const { getComissoesPorProfissional: get } = await import('@/lib/relatorios')
-  const dados = await get(ini, fi)
-  const header = 'Profissional,Consultas,Total Comissão,Pago,Pendente'
-  return [header, ...dados.map(d => [`"${d.nome}"`, d.count, d.total.toFixed(2), d.pago.toFixed(2), d.pendente.toFixed(2)].join(','))].join('\n')
-}
-
 export default async function RelatorioComissoesPage({ searchParams }: Props) {
   const preset = getSearchParam(searchParams.periodo, 'mes_atual')
   const { inicio, fim } = periodoToRange(preset, getSearchParam(searchParams.de), getSearchParam(searchParams.ate))
   const dados = await getComissoesPorProfissional(inicio, fim)
   const totalGeral = dados.reduce((s, r) => s + r.total, 0)
   const maxTotal = Math.max(...dados.map(d => d.total), 1)
-  const csvAction = exportCSV.bind(null, inicio, fim)
+
+  async function csvAction() {
+    'use server'
+    const { getComissoesPorProfissional: get } = await import('@/lib/relatorios')
+    const rows = await get(inicio, fim)
+    const header = 'Profissional,Consultas,Total Comissão,Pago,Pendente'
+    return [header, ...rows.map(d => [`"${d.nome}"`, d.count, d.total.toFixed(2), d.pago.toFixed(2), d.pendente.toFixed(2)].join(','))].join('\n')
+  }
 
   return (
     <div className="space-y-6">

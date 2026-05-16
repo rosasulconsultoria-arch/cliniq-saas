@@ -9,19 +9,18 @@ import { Badge } from '@/components/ui/badge'
 
 interface Props { searchParams: Record<string, string | string[] | undefined> }
 
-async function exportCSV(ini: string, fi: string) {
-  'use server'
-  const { getOcupacaoPorSala: get } = await import('@/lib/relatorios')
-  const dados = await get(ini, fi)
-  const header = 'Sala,Agendamentos,Realizados,Slots Disponíveis,Taxa (%)'
-  return [header, ...dados.map(d => [`"${d.sala}"`, d.agendado, d.realizado, d.slotsTotal, d.taxa.toFixed(1)].join(','))].join('\n')
-}
-
 export default async function RelatorioOcupacaoPage({ searchParams }: Props) {
   const preset = getSearchParam(searchParams.periodo, 'mes_atual')
   const { inicio, fim } = periodoToRange(preset, getSearchParam(searchParams.de), getSearchParam(searchParams.ate))
   const dados = await getOcupacaoPorSala(inicio, fim)
-  const csvAction = exportCSV.bind(null, inicio, fim)
+
+  async function csvAction() {
+    'use server'
+    const { getOcupacaoPorSala: get } = await import('@/lib/relatorios')
+    const rows = await get(inicio, fim)
+    const header = 'Sala,Agendamentos,Realizados,Slots Disponíveis,Taxa (%)'
+    return [header, ...rows.map(d => [`"${d.sala}"`, d.agendado, d.realizado, d.slotsTotal, d.taxa.toFixed(1)].join(','))].join('\n')
+  }
 
   function taxaColor(taxa: number) {
     if (taxa >= 70) return 'border-emerald-400 text-emerald-600'
