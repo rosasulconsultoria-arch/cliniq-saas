@@ -1,5 +1,12 @@
 import { z } from 'zod'
 
+const toOptionalNumber = (v: unknown) => {
+  if (v === '' || v === null || v === undefined) return null
+  if (typeof v === 'number') return isNaN(v) ? null : v
+  const n = Number(v)
+  return isNaN(n) ? null : n
+}
+
 export const ProfissionalSchema = z
   .object({
     nome: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
@@ -8,9 +15,9 @@ export const ProfissionalSchema = z
     especialidade: z.string().min(2, 'Especialidade obrigatória'),
     crp: z.string().optional(),
     tipoVinculo: z.enum(['COMISSIONADO', 'LOCATARIO']),
-    comissaoPercentual: z.coerce.number().min(0).max(100).optional().nullable(),
-    valorAluguelMensal: z.coerce.number().min(0).optional().nullable(),
-    valorConsultaPadrao: z.coerce.number().min(0).optional().nullable(),
+    comissaoPercentual: z.preprocess(toOptionalNumber, z.number().min(0).max(100).nullable().optional()),
+    valorAluguelMensal: z.preprocess(toOptionalNumber, z.number().min(0).nullable().optional()),
+    valorConsultaPadrao: z.preprocess(toOptionalNumber, z.number().min(0).nullable().optional()),
     bio: z.string().optional(),
     ativo: z.boolean().default(true),
   })
