@@ -2,13 +2,13 @@ import Link from 'next/link'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { redirect } from 'next/navigation'
-import { format } from 'date-fns'
+import { format, startOfMonth } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Lock } from 'lucide-react'
 import { formatBRL } from '@/lib/utils'
 import { DeleteDespesaButton } from '@/components/meu-financeiro/delete-button'
 
@@ -21,20 +21,67 @@ export default async function MeuFinanceiroPage() {
   })
   if (!profissional) redirect('/dashboard')
 
-  const despesas = await db.despesaProfissional.findMany({
-    where: { profissionalId: profissional.id },
-    orderBy: { data: 'desc' },
-  })
+  // Auto-gerar aluguel do mês atual para LOCATARIO
+  if (profissional.tipoVinculo === 'LOCATARIO' && profissional.valorAluguelMensal) {
+    const mesAtual = startOfMonth(new Date())
+    const aluguelExiste = await db.aluguel.findFirst({
+      where: { profissionalId: profissional.id, mesReferencia: mesAtual },
+    })
+    if (!aluguelExiste) {
+      await db.aluguel.create({
+        data: {
+          profissionalId: profissional.id,
+          mesReferencia: mesAtual,
+          valor: profissional.valorAluguelMensal,
+          status: 'PENDENTE',
+        },
+      })
+    }
+  }
 
-  const totalPago = despesas.filter(d => d.status === 'PAGO').reduce((s, d) => s + Number(d.valor), 0)
-  const totalPendente = despesas.filter(d => d.status === 'PENDENTE').reduce((s, d) => s + Number(d.valor), 0)
+  const [despesasPessoais, alugueis, comissoes] = await Promise.all([
+    db.despesaProfissional.findMany({
+      where: { profissionalId: profissional.id },
+      orderBy: { data: 'desc' },
+    }),
+    profissional.tipoVinculo === 'LOCATARIO'
+      ? db.aluguel.findMany({
+          where: { profissionalId: profissional.id },
+          orderBy: { mesReferencia: 'desc' },
+        })
+      : Promise.resolve([]),
+    profissional.tipoVinculo === 'COMISSIONADO'
+      ? db.comissao.findMany({
+          where: { profissionalId: profissional.id },
+          include: { agendamento: { select: { dataHoraInicio: true, valor: true } } },
+          orderBy: { agendamento: { dataHoraInicio: 'desc' } },
+        })
+      : Promise.resolve([]),
+  ])
+
+  // Totais combinados
+  const totalPendente =
+    despesasPessoais.filter(d => d.status === 'PENDENTE').reduce((s, d) => s + Number(d.valor), 0) +
+    alugueis.filter(a => a.status === 'PENDENTE').reduce((s, a) => s + Number(a.valor), 0) +
+    comissoes.filter(c => c.status === 'PENDENTE').reduce((s, c) => s + Number(c.valorComissao), 0)
+
+  const totalPago =
+    despesasPessoais.filter(d => d.status === 'PAGO').reduce((s, d) => s + Number(d.valor), 0) +
+    alugueis.filter(a => a.status === 'PAGO').reduce((s, a) => s + Number(a.valor), 0) +
+    comissoes.filter(c => c.status === 'PAGO').reduce((s, c) => s + Number(c.valorComissao), 0)
+
+  const statusBadge = (status: string) => (
+    <Badge variant="outline" className={status === 'PAGO' ? 'border-green-400 text-green-600' : 'border-amber-400 text-amber-600'}>
+      {status === 'PAGO' ? 'Pago' : 'Pendente'}
+    </Badge>
+  )
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Minhas Despesas</h1>
-          <p className="text-sm text-muted-foreground mt-1">Despesas pessoais — não impactam as finanças da clínica</p>
+          <p className="text-sm text-muted-foreground mt-1">Despesas pessoais e obrigações com a clínica</p>
         </div>
         <Button asChild>
           <Link href="/meu-financeiro/nova">
@@ -48,67 +95,125 @@ export default async function MeuFinanceiroPage() {
       <div className="grid gap-4 sm:grid-cols-2 max-w-md">
         <Card className="shadow-sm">
           <CardContent className="pt-4 pb-4">
-            <p className="text-xs text-muted-foreground">Total pago</p>
-            <p className="text-xl font-bold text-red-500">{formatBRL(totalPago)}</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-sm">
-          <CardContent className="pt-4 pb-4">
             <p className="text-xs text-muted-foreground">Total pendente</p>
             <p className="text-xl font-bold text-amber-600">{formatBRL(totalPendente)}</p>
           </CardContent>
         </Card>
+        <Card className="shadow-sm">
+          <CardContent className="pt-4 pb-4">
+            <p className="text-xs text-muted-foreground">Total pago</p>
+            <p className="text-xl font-bold text-emerald-600">{formatBRL(totalPago)}</p>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Lista */}
-      {despesas.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
-          <p className="text-sm">Nenhuma despesa registrada.</p>
-          <Button variant="outline" className="mt-4" asChild>
-            <Link href="/meu-financeiro/nova">Registrar primeira despesa</Link>
-          </Button>
-        </div>
-      ) : (
-        <div className="rounded-lg border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Data</TableHead>
-                <TableHead>Descrição</TableHead>
-                <TableHead>Categoria</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead />
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {despesas.map(d => (
-                <TableRow key={d.id}>
-                  <TableCell className="text-sm whitespace-nowrap">
-                    {format(new Date(d.data), 'dd/MM/yyyy', { locale: ptBR })}
-                  </TableCell>
-                  <TableCell className="font-medium max-w-xs truncate">{d.descricao}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{d.categoria}</TableCell>
-                  <TableCell className="text-right font-semibold text-red-500">{formatBRL(Number(d.valor))}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={d.status === 'PAGO'
-                        ? 'border-green-400 text-green-600'
-                        : 'border-amber-400 text-amber-600'}
-                    >
-                      {d.status === 'PAGO' ? 'Pago' : 'Pendente'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <DeleteDespesaButton id={d.id} />
-                  </TableCell>
+      {/* Aluguel mensal (LOCATARIO) */}
+      {alugueis.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <Lock className="h-3.5 w-3.5" /> Aluguel da Clínica
+          </h2>
+          <div className="rounded-lg border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Mês de Referência</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                  <TableHead>Status</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {alugueis.map(a => (
+                  <TableRow key={a.id}>
+                    <TableCell className="text-sm whitespace-nowrap">
+                      {format(new Date(a.mesReferencia), 'MMMM yyyy', { locale: ptBR })}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">Aluguel de sala — gerado automaticamente</TableCell>
+                    <TableCell className="text-right font-semibold text-red-500">{formatBRL(Number(a.valor))}</TableCell>
+                    <TableCell>{statusBadge(a.status)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       )}
+
+      {/* Comissões (COMISSIONADO) */}
+      {comissoes.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
+            <Lock className="h-3.5 w-3.5" /> Comissões da Clínica
+          </h2>
+          <div className="rounded-lg border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data da Consulta</TableHead>
+                  <TableHead>Valor Bruto</TableHead>
+                  <TableHead className="text-right">Comissão ({Number(profissional.comissaoPercentual)}%)</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {comissoes.map(c => (
+                  <TableRow key={c.id}>
+                    <TableCell className="text-sm whitespace-nowrap">
+                      {format(new Date(c.agendamento.dataHoraInicio), 'dd/MM/yyyy', { locale: ptBR })}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{formatBRL(Number(c.valorBruto))}</TableCell>
+                    <TableCell className="text-right font-semibold text-red-500">{formatBRL(Number(c.valorComissao))}</TableCell>
+                    <TableCell>{statusBadge(c.status)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      )}
+
+      {/* Despesas pessoais */}
+      <div className="space-y-2">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Despesas Pessoais</h2>
+        {despesasPessoais.length === 0 ? (
+          <div className="text-center py-10 text-muted-foreground border rounded-lg">
+            <p className="text-sm">Nenhuma despesa pessoal registrada.</p>
+            <Button variant="outline" className="mt-3" asChild>
+              <Link href="/meu-financeiro/nova">Registrar despesa</Link>
+            </Button>
+          </div>
+        ) : (
+          <div className="rounded-lg border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead>Categoria</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {despesasPessoais.map(d => (
+                  <TableRow key={d.id}>
+                    <TableCell className="text-sm whitespace-nowrap">
+                      {format(new Date(d.data), 'dd/MM/yyyy', { locale: ptBR })}
+                    </TableCell>
+                    <TableCell className="font-medium max-w-xs truncate">{d.descricao}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{d.categoria}</TableCell>
+                    <TableCell className="text-right font-semibold text-red-500">{formatBRL(Number(d.valor))}</TableCell>
+                    <TableCell>{statusBadge(d.status)}</TableCell>
+                    <TableCell><DeleteDespesaButton id={d.id} /></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
