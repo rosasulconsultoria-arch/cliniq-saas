@@ -7,8 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { TablePagination } from '@/components/table-pagination'
 import { EmptyState } from '@/components/empty-state'
 import { SearchInput } from '@/components/search-input'
-import { PagarButton } from '@/components/financeiro/pagar-button'
-import { pagarComissao } from '../actions'
+import { ReceberPagamentoButton } from '@/components/financeiro/receber-pagamento-button'
 import { formatBRL, getPageParam, getSearchParam } from '@/lib/utils'
 import { DollarSign } from 'lucide-react'
 
@@ -93,7 +92,12 @@ export default async function ComissoesPage({ searchParams }: Props) {
                   </TableCell>
                   <TableCell className="text-right">
                     {c.status === 'PENDENTE' && (
-                      <PagarButton onPagar={pagarComissao.bind(null, c.id)} label="Marcar como paga" />
+                      <ReceberPagamentoButton
+                        id={c.id}
+                        tipo="comissao"
+                        descricao={`Comissão — ${c.profissional.user.name}`}
+                        valor={formatBRL(Number(c.valorComissao))}
+                      />
                     )}
                   </TableCell>
                 </TableRow>

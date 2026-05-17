@@ -204,6 +204,7 @@ model Comissao {
   status         StatusFinanceiro @default(PENDENTE)
   formaPagamento String?
   dataPagamento  DateTime?
+  observacao     String?
 
   @@index([profissionalId])
 }
@@ -236,6 +237,7 @@ model Aluguel {
   status         StatusFinanceiro @default(PENDENTE)
   formaPagamento String?
   dataPagamento  DateTime?
+  observacao     String?
 
   @@index([profissionalId])
   @@index([mesReferencia])

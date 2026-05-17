@@ -14,14 +14,29 @@ export default async function FinanceiroPage() {
   const inicio = startOfMonth(hoje)
   const fim = endOfMonth(hoje)
 
-  // KPIs
-  const [receita, despesa, investimento, comissoesPend, alugueisPend] = await Promise.all([
+  // KPIs + breakdown por origem
+  const [receita, despesa, investimento, comissoesPend, alugueisPend, todasReceitas] = await Promise.all([
     db.transacaoFinanceira.aggregate({ where: { tipo: 'RECEITA', data: { gte: inicio, lte: fim }, status: 'PAGO' }, _sum: { valor: true } }),
     db.transacaoFinanceira.aggregate({ where: { tipo: 'DESPESA', data: { gte: inicio, lte: fim }, status: 'PAGO' }, _sum: { valor: true } }),
     db.transacaoFinanceira.aggregate({ where: { tipo: 'INVESTIMENTO', data: { gte: inicio, lte: fim }, status: 'PAGO' }, _sum: { valor: true } }),
     db.comissao.aggregate({ where: { status: 'PENDENTE' }, _sum: { valorComissao: true } }),
     db.aluguel.aggregate({ where: { status: 'PENDENTE' }, _sum: { valor: true } }),
+    db.transacaoFinanceira.findMany({
+      where: { tipo: 'RECEITA', data: { gte: inicio, lte: fim }, status: 'PAGO' },
+      select: { descricao: true, valor: true },
+    }),
   ])
+
+  // Breakdown por origem
+  const origemConsultas = todasReceitas
+    .filter(r => r.descricao.startsWith('Receita de consulta'))
+    .reduce((s, r) => s + Number(r.valor), 0)
+  const origemAlugueis = todasReceitas
+    .filter(r => r.descricao.startsWith('Aluguel de sala'))
+    .reduce((s, r) => s + Number(r.valor), 0)
+  const origemOutras = todasReceitas
+    .filter(r => !r.descricao.startsWith('Receita de consulta') && !r.descricao.startsWith('Aluguel de sala'))
+    .reduce((s, r) => s + Number(r.valor), 0)
 
   const receitaMes = Number(receita._sum.valor ?? 0)
   const despesaMes = Number(despesa._sum.valor ?? 0)
@@ -83,6 +98,39 @@ export default async function FinanceiroPage() {
         <ReceitasDespesasChart dados={dadosMensais} />
         <DespesasCategoriaChart dados={porCategoria} />
       </div>
+
+      {/* Receitas por origem */}
+      <Card className="shadow-sm">
+        <CardHeader>
+          <CardTitle className="text-base font-semibold">Receitas por Origem — Mês Atual</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {[
+              { label: 'Consultas (comissão clínica)', valor: origemConsultas, cor: 'bg-indigo-500' },
+              { label: 'Aluguéis de sala', valor: origemAlugueis, cor: 'bg-emerald-500' },
+              { label: 'Outras receitas', valor: origemOutras, cor: 'bg-blue-500' },
+            ].map(item => {
+              const total = receitaMes || 1
+              const pct = Math.round((item.valor / total) * 100)
+              return (
+                <div key={item.label} className="space-y-1">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground flex items-center gap-2">
+                      <span className={`h-2 w-2 rounded-full ${item.cor}`} />
+                      {item.label}
+                    </span>
+                    <span className="font-semibold">{formatBRL(item.valor)}</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                    <div className={`h-full rounded-full ${item.cor}`} style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="shadow-sm">
         <CardHeader>

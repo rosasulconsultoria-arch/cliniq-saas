@@ -6,9 +6,8 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TablePagination } from '@/components/table-pagination'
 import { EmptyState } from '@/components/empty-state'
-import { PagarButton } from '@/components/financeiro/pagar-button'
 import { GerarAlugueisButton } from '@/components/financeiro/gerar-alugueis-button'
-import { pagarAluguel } from '../actions'
+import { ReceberPagamentoButton } from '@/components/financeiro/receber-pagamento-button'
 import { formatBRL, getPageParam, getSearchParam } from '@/lib/utils'
 import { Home } from 'lucide-react'
 
@@ -87,7 +86,12 @@ export default async function AlugueisPage({ searchParams }: Props) {
                   </TableCell>
                   <TableCell className="text-right">
                     {a.status === 'PENDENTE' && (
-                      <PagarButton onPagar={pagarAluguel.bind(null, a.id)} label="Registrar pagamento" />
+                      <ReceberPagamentoButton
+                        id={a.id}
+                        tipo="aluguel"
+                        descricao={`Aluguel — ${a.profissional.user.name} · ${format(a.mesReferencia, "MMM/yyyy", { locale: ptBR })}`}
+                        valor={formatBRL(Number(a.valor))}
+                      />
                     )}
                   </TableCell>
                 </TableRow>

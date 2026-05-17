@@ -111,7 +111,12 @@ export async function deletarCategoria(id: string): Promise<void> {
 // Comissões
 // ──────────────────────────────────────────────
 
-export async function pagarComissao(comissaoId: string): Promise<{ error?: string }> {
+export async function pagarComissao(
+  comissaoId: string,
+  formaPagamento: string,
+  dataPagamento: string,
+  observacao?: string,
+): Promise<{ error?: string }> {
   const comissao = await db.comissao.findUnique({
     where: { id: comissaoId },
     include: { profissional: { include: { user: { select: { name: true } } } } },
@@ -119,33 +124,57 @@ export async function pagarComissao(comissaoId: string): Promise<{ error?: strin
   if (!comissao) return { error: 'Comissão não encontrada' }
   if (comissao.status === 'PAGO') return { error: 'Comissão já foi paga' }
 
-  const categoria = await db.categoriaFinanceira.findFirst({
-    where: { tipo: 'DESPESA' },
-    orderBy: { nome: 'asc' },
-  })
+  const dt = new Date(dataPagamento)
+  const nomeProf = comissao.profissional.user.name
+
+  const [catDespesa, catReceita] = await Promise.all([
+    db.categoriaFinanceira.findFirst({ where: { tipo: 'DESPESA' }, orderBy: { nome: 'asc' } }),
+    db.categoriaFinanceira.findFirst({ where: { tipo: 'RECEITA' }, orderBy: { nome: 'asc' } }),
+  ])
 
   try {
     await db.$transaction(async (tx) => {
       await tx.comissao.update({
         where: { id: comissaoId },
-        data: { status: 'PAGO', dataPagamento: new Date() },
+        data: { status: 'PAGO', dataPagamento: dt, formaPagamento, observacao: observacao || null },
       })
-      if (categoria) {
+      // Despesa: comissão paga ao profissional
+      if (catDespesa) {
         await tx.transacaoFinanceira.create({
           data: {
             tipo: 'DESPESA',
-            categoriaId: categoria.id,
-            descricao: `Comissão — ${comissao.profissional.user.name}`,
+            categoriaId: catDespesa.id,
+            descricao: `Comissão paga — ${nomeProf}`,
             valor: comissao.valorComissao,
-            data: new Date(),
+            data: dt,
+            formaPagamento,
             status: 'PAGO',
-            dataPagamento: new Date(),
+            dataPagamento: dt,
             profissionalId: comissao.profissionalId,
+            observacoes: observacao || null,
+          },
+        })
+      }
+      // Receita: parte da clínica (valorClinica)
+      if (catReceita) {
+        await tx.transacaoFinanceira.create({
+          data: {
+            tipo: 'RECEITA',
+            categoriaId: catReceita.id,
+            descricao: `Receita de consulta — ${nomeProf}`,
+            valor: comissao.valorClinica,
+            data: dt,
+            formaPagamento,
+            status: 'PAGO',
+            dataPagamento: dt,
+            profissionalId: comissao.profissionalId,
+            observacoes: observacao || null,
           },
         })
       }
     })
     revalidatePath('/financeiro/comissoes')
+    revalidatePath('/dashboard')
     return {}
   } catch {
     return { error: 'Erro ao pagar comissão.' }
@@ -187,7 +216,12 @@ export async function gerarAlugueisDoMes(): Promise<{ error?: string; count?: nu
   return { count }
 }
 
-export async function pagarAluguel(aluguelId: string): Promise<{ error?: string }> {
+export async function pagarAluguel(
+  aluguelId: string,
+  formaPagamento: string,
+  dataPagamento: string,
+  observacao?: string,
+): Promise<{ error?: string }> {
   const aluguel = await db.aluguel.findUnique({
     where: { id: aluguelId },
     include: { profissional: { include: { user: { select: { name: true } } } } },
@@ -195,6 +229,7 @@ export async function pagarAluguel(aluguelId: string): Promise<{ error?: string 
   if (!aluguel) return { error: 'Aluguel não encontrado' }
   if (aluguel.status === 'PAGO') return { error: 'Aluguel já foi pago' }
 
+  const dt = new Date(dataPagamento)
   const categoria = await db.categoriaFinanceira.findFirst({
     where: { tipo: 'RECEITA' },
     orderBy: { nome: 'asc' },
@@ -204,7 +239,7 @@ export async function pagarAluguel(aluguelId: string): Promise<{ error?: string 
     await db.$transaction(async (tx) => {
       await tx.aluguel.update({
         where: { id: aluguelId },
-        data: { status: 'PAGO', dataPagamento: new Date() },
+        data: { status: 'PAGO', dataPagamento: dt, formaPagamento, observacao: observacao || null },
       })
       if (categoria) {
         await tx.transacaoFinanceira.create({
@@ -213,15 +248,18 @@ export async function pagarAluguel(aluguelId: string): Promise<{ error?: string 
             categoriaId: categoria.id,
             descricao: `Aluguel de sala — ${aluguel.profissional.user.name}`,
             valor: aluguel.valor,
-            data: new Date(),
+            data: dt,
+            formaPagamento,
             status: 'PAGO',
-            dataPagamento: new Date(),
+            dataPagamento: dt,
             profissionalId: aluguel.profissionalId,
+            observacoes: observacao || null,
           },
         })
       }
     })
     revalidatePath('/financeiro/alugueis')
+    revalidatePath('/dashboard')
     return {}
   } catch {
     return { error: 'Erro ao registrar pagamento.' }
