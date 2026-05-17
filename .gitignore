@@ -34,3 +34,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# documentação sensível (não subir ao GitHub)
+REFERENCIA.md
+seed-prod.mjs
+check-user.mjs
+create-admin.mjs
