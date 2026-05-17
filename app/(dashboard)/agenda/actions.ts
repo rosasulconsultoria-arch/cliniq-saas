@@ -217,7 +217,6 @@ export async function atualizarStatusAgendamento(
         }
 
         // Cria transação financeira de receita (somente para LOCATARIO — COMISSIONADO gera receita via pagarComissao)
-        const prof = agendamento.profissional
         if (prof.tipoVinculo === 'LOCATARIO') {
           const categoria = await tx.categoriaFinanceira.findFirst({
             where: { tipo: 'RECEITA' },
