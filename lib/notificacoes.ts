@@ -2,9 +2,10 @@ import { Resend } from 'resend'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-const FROM = process.env.EMAIL_FROM ?? 'onboarding@resend.dev'
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? ''
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY ?? '')
+}
+const FROM = () => process.env.EMAIL_FROM ?? 'onboarding@resend.dev'
 
 export interface DadosAgendamento {
   id: string
@@ -85,8 +86,8 @@ function gerarCorpoEmail(tipo: 'confirmacao' | 'lembrete', dados: DadosAgendamen
 export async function enviarConfirmacaoEmail(dados: DadosAgendamento): Promise<boolean> {
   if (!dados.pacienteEmail) return false
   try {
-    await resend.emails.send({
-      from: FROM,
+    await getResend().emails.send({
+      from: FROM(),
       to: dados.pacienteEmail,
       subject: `✓ Consulta confirmada — ${format(dados.dataHoraInicio, 'dd/MM/yyyy HH:mm')}`,
       html: gerarCorpoEmail('confirmacao', dados),
@@ -101,8 +102,8 @@ export async function enviarConfirmacaoEmail(dados: DadosAgendamento): Promise<b
 export async function enviarLembreteEmail(dados: DadosAgendamento): Promise<boolean> {
   if (!dados.pacienteEmail) return false
   try {
-    await resend.emails.send({
-      from: FROM,
+    await getResend().emails.send({
+      from: FROM(),
       to: dados.pacienteEmail,
       subject: `🔔 Lembrete: consulta amanhã às ${format(dados.dataHoraInicio, 'HH:mm')}`,
       html: gerarCorpoEmail('lembrete', dados),
