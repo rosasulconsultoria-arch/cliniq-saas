@@ -9,6 +9,10 @@ export const AgendamentoSchema = z.object({
   valor: z.coerce.number().min(0, 'Valor deve ser positivo'),
   tipoCobranca: z.enum(['CONSULTA', 'PACOTE']).default('CONSULTA'),
   totalSessoes: z.coerce.number().int().min(2).optional().nullable(),
+  formaPagamento: z.string().optional().nullable(),
+  bandeiraCartao: z.string().optional().nullable(),
+  numeroParcelas: z.coerce.number().int().min(1).max(48).optional().nullable(),
+  taxaCartaoPerc: z.coerce.number().min(0).max(20).optional().nullable(),
   origem: z.enum(['PUBLICO', 'INTERNO']).default('INTERNO'),
   observacoes: z.string().optional(),
 })

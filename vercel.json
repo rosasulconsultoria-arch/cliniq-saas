@@ -4,5 +4,11 @@
       "maxDuration": 30
     }
   },
-  "regions": ["gru1"]
+  "regions": ["gru1"],
+  "crons": [
+    {
+      "path": "/api/cron/lembrete-24h",
+      "schedule": "0 * * * *"
+    }
+  ]
 }

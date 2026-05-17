@@ -6,7 +6,13 @@ export interface AgendamentoDisplay {
   valor: number
   observacoes: string | null
   origem?: string
+  tipoCobranca?: string
+  totalSessoes?: number | null
+  formaPagamento?: string | null
+  bandeiraCartao?: string | null
+  numeroParcelas?: number | null
+  confirmacaoEnviada?: boolean
   profissional: { id: string; nome: string }
-  paciente: { id: string; nome: string }
+  paciente: { id: string; nome: string; email?: string | null; telefone?: string | null }
   sala: { id: string; nome: string }
 }

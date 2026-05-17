@@ -46,6 +46,10 @@ export function AgendamentoDialog({ open, onClose, slot, profissionais, salas, u
       valor: 0,
       tipoCobranca: 'CONSULTA',
       totalSessoes: null,
+      formaPagamento: null,
+      bandeiraCartao: null,
+      numeroParcelas: 1,
+      taxaCartaoPerc: null,
       origem: 'INTERNO',
       profissionalId: userRole === 'PROFISSIONAL' && userProfissionalId ? userProfissionalId : '',
       pacienteId: '',
@@ -55,6 +59,9 @@ export function AgendamentoDialog({ open, onClose, slot, profissionais, salas, u
 
   const { watch, setValue, control, register, handleSubmit, reset, formState: { errors } } = form
   const tipoCobranca = watch('tipoCobranca')
+  const formaPagamento = watch('formaPagamento')
+  const isCartao = formaPagamento === 'CARTAO_CREDITO' || formaPagamento === 'CARTAO_DEBITO'
+  const isCredito = formaPagamento === 'CARTAO_CREDITO'
 
   // Pre-fill date/time from clicked slot
   useEffect(() => {
@@ -84,6 +91,12 @@ export function AgendamentoDialog({ open, onClose, slot, profissionais, salas, u
       const result = await criarAgendamento(data)
       if (result?.error) { toast.error(result.error); return }
       toast.success('Agendamento criado!')
+      if ((result as any).whatsappLink) {
+        toast('Enviar confirmação por WhatsApp?', {
+          action: { label: 'Abrir WhatsApp', onClick: () => window.open((result as any).whatsappLink, '_blank') },
+          duration: 8000,
+        })
+      }
       onClose()
       onSuccess()
     })
@@ -200,6 +213,57 @@ export function AgendamentoDialog({ open, onClose, slot, profissionais, salas, u
                 <Label>Número de sessões *</Label>
                 <Input type="number" min="2" step="1" placeholder="Ex: 10" {...register('totalSessoes', { valueAsNumber: true })} />
                 {errors.totalSessoes && <p className="text-xs text-destructive">{errors.totalSessoes.message}</p>}
+              </div>
+            )}
+          </div>
+
+          {/* Pagamento */}
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label>Forma de Pagamento</Label>
+              <Controller control={control} name="formaPagamento" render={({ field }) => (
+                <Select value={field.value ?? ''} onValueChange={v => {
+                  field.onChange(v || null)
+                  if (v !== 'CARTAO_CREDITO') setValue('numeroParcelas', 1)
+                  if (v !== 'CARTAO_CREDITO' && v !== 'CARTAO_DEBITO') { setValue('bandeiraCartao', null); setValue('taxaCartaoPerc', null) }
+                }}>
+                  <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="DINHEIRO">Dinheiro</SelectItem>
+                    <SelectItem value="PIX">Pix</SelectItem>
+                    <SelectItem value="TRANSFERENCIA">Transferência Bancária</SelectItem>
+                    <SelectItem value="CARTAO_CREDITO">Cartão de Crédito</SelectItem>
+                    <SelectItem value="CARTAO_DEBITO">Cartão de Débito</SelectItem>
+                  </SelectContent>
+                </Select>
+              )} />
+            </div>
+
+            {isCartao && (
+              <div className="grid grid-cols-2 gap-3 pl-2 border-l-2 border-indigo-100">
+                <div className="space-y-1.5">
+                  <Label>Bandeira</Label>
+                  <Controller control={control} name="bandeiraCartao" render={({ field }) => (
+                    <Select value={field.value ?? ''} onValueChange={v => field.onChange(v || null)}>
+                      <SelectTrigger><SelectValue placeholder="Bandeira..." /></SelectTrigger>
+                      <SelectContent>
+                        {['Visa', 'Mastercard', 'Elo', 'American Express', 'Hipercard', 'Outro'].map(b => (
+                          <SelectItem key={b} value={b}>{b}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Taxa (%)</Label>
+                  <Input type="number" min="0" max="20" step="0.01" placeholder="Ex: 2.5" {...register('taxaCartaoPerc', { valueAsNumber: true })} />
+                </div>
+                {isCredito && (
+                  <div className="space-y-1.5">
+                    <Label>Parcelas</Label>
+                    <Input type="number" min="1" max="48" step="1" placeholder="1" {...register('numeroParcelas', { valueAsNumber: true })} />
+                  </div>
+                )}
               </div>
             )}
           </div>

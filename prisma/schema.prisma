@@ -146,11 +146,17 @@ model Agendamento {
   dataHoraInicio DateTime
   dataHoraFim    DateTime
   status         StatusAgendamento @default(AGENDADO)
-  valor          Decimal           @db.Decimal(10, 2)
-  tipoCobranca   String            @default("CONSULTA")
-  totalSessoes   Int?
-  origem         OrigemAgendamento @default(INTERNO)
-  observacoes    String?
+  valor             Decimal           @db.Decimal(10, 2)
+  tipoCobranca      String            @default("CONSULTA")
+  totalSessoes      Int?
+  formaPagamento    String?
+  bandeiraCartao    String?
+  numeroParcelas    Int?              @default(1)
+  taxaCartaoPerc    Decimal?          @db.Decimal(5, 2)
+  confirmacaoEnviada Boolean         @default(false)
+  lembreteEnviado   Boolean          @default(false)
+  origem            OrigemAgendamento @default(INTERNO)
+  observacoes       String?
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 

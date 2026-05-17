@@ -3,7 +3,8 @@
 import { db } from '@/lib/db'
 import { revalidatePath } from 'next/cache'
 import { AgendamentoSchema } from '@/lib/schemas/agendamento'
-import { startOfWeek, endOfWeek } from 'date-fns'
+import { startOfWeek, endOfWeek, addMonths } from 'date-fns'
+import { enviarConfirmacaoEmail, gerarLinkWhatsApp } from '@/lib/notificacoes'
 
 // ──────────────────────────────────────────────
 // Queries
@@ -43,7 +44,7 @@ export async function getAgendamentos({
     where,
     include: {
       profissional: { include: { user: { select: { name: true } } } },
-      paciente: { select: { id: true, nome: true } },
+      paciente: { select: { id: true, nome: true, email: true, telefone: true } },
       sala: { select: { id: true, nome: true } },
     },
     orderBy: { dataHoraInicio: 'asc' },
@@ -58,8 +59,14 @@ export async function getAgendamentos({
     valor: Number(a.valor),
     observacoes: a.observacoes,
     origem: a.origem as string,
+    tipoCobranca: a.tipoCobranca,
+    totalSessoes: a.totalSessoes,
+    formaPagamento: a.formaPagamento ?? null,
+    bandeiraCartao: a.bandeiraCartao ?? null,
+    numeroParcelas: a.numeroParcelas ?? null,
+    confirmacaoEnviada: a.confirmacaoEnviada ?? false,
     profissional: { id: a.profissionalId, nome: a.profissional.user.name },
-    paciente: { id: a.pacienteId, nome: a.paciente.nome },
+    paciente: { id: a.pacienteId, nome: a.paciente.nome, email: a.paciente.email ?? null, telefone: a.paciente.telefone ?? null },
     sala: { id: a.salaId, nome: a.sala.nome },
   }))
 }
@@ -114,11 +121,71 @@ export async function criarAgendamento(data: unknown): Promise<{ error?: string 
   if (conflitoSala) return { error: 'Sala já está ocupada nesse horário' }
 
   try {
-    await db.agendamento.create({
+    const agend = await db.agendamento.create({
       data: { ...rest, dataHoraInicio: inicio, dataHoraFim: fim, status: 'AGENDADO' },
+      include: {
+        paciente: { select: { nome: true, email: true, telefone: true } },
+        profissional: { include: { user: { select: { name: true } } } },
+        sala: { select: { nome: true } },
+      },
     })
+
+    // Auto-criar parcelamento se cartão crédito com parcelas > 1
+    const { formaPagamento, bandeiraCartao, numeroParcelas, taxaCartaoPerc, valor } = rest as any
+    if (formaPagamento === 'CARTAO_CREDITO' && numeroParcelas && numeroParcelas > 1 && bandeiraCartao) {
+      const taxa = Number(taxaCartaoPerc ?? 0)
+      const valorTotal = Number(valor)
+      const valorLiquido = valorTotal * (1 - taxa / 100)
+      const valorParcela = valorLiquido / numeroParcelas
+      const p = await db.parcelamento.create({
+        data: {
+          profissionalId: rest.profissionalId,
+          agendamentoId: agend.id,
+          descricao: `Consulta — ${agend.paciente.nome}`,
+          valorTotal,
+          bandeira: bandeiraCartao,
+          tipoPagamento: 'CREDITO',
+          taxaCartao: taxa,
+          totalParcelas: numeroParcelas,
+          valorLiquido,
+        },
+      })
+      await db.parcela.createMany({
+        data: Array.from({ length: numeroParcelas }, (_, i) => ({
+          parcelamentoId: p.id,
+          numero: i + 1,
+          dataVencimento: addMonths(inicio, i),
+          valor: valorParcela,
+          status: 'PENDENTE',
+        })),
+      })
+    }
+
+    // Enviar confirmação por email
+    const dadosNotif = {
+      id: agend.id,
+      dataHoraInicio: agend.dataHoraInicio,
+      dataHoraFim: agend.dataHoraFim,
+      valor: Number(agend.valor),
+      pacienteNome: agend.paciente.nome,
+      pacienteEmail: agend.paciente.email,
+      pacienteTelefone: agend.paciente.telefone,
+      profissionalNome: agend.profissional.user.name,
+      salaNome: agend.sala.nome,
+      tipoCobranca: agend.tipoCobranca,
+      totalSessoes: agend.totalSessoes,
+      formaPagamento: (agend as any).formaPagamento,
+      numeroParcelas: (agend as any).numeroParcelas,
+    }
+    const emailEnviado = await enviarConfirmacaoEmail(dadosNotif)
+    if (emailEnviado) {
+      await db.agendamento.update({ where: { id: agend.id }, data: { confirmacaoEnviada: true } })
+    }
+
+    const linkWhats = gerarLinkWhatsApp(dadosNotif, 'confirmacao')
+
     revalidatePath('/agenda')
-    return {}
+    return { whatsappLink: linkWhats || undefined }
   } catch (e: any) {
     return { error: 'Erro ao criar agendamento.' }
   }
