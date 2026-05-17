@@ -5,7 +5,7 @@ import { formatBRL } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { CalendarClock, Handshake, Building2, Receipt } from 'lucide-react'
+import { CalendarClock, Handshake, Building2, Receipt, CreditCard } from 'lucide-react'
 
 export default async function ContasAReceberPage() {
   const d = await getContasAReceber()
@@ -20,10 +20,11 @@ export default async function ContasAReceberPage() {
   }
 
   const cards = [
-    { titulo: 'Total a Receber', valor: d.totalGeral, cor: 'text-indigo-600', destaque: true },
+    { titulo: 'Total a Receber', valor: d.totalGeral, cor: 'text-indigo-600' },
     { titulo: 'Atendimentos Futuros', valor: d.totalAtendimentos, cor: 'text-blue-600' },
     { titulo: 'Comissões Pendentes', valor: d.totalComissoes, cor: 'text-amber-600' },
     { titulo: 'Aluguéis Pendentes', valor: d.totalAlugueis, cor: 'text-orange-600' },
+    { titulo: 'Parcelas Cartão', valor: d.totalParcelas, cor: 'text-purple-600' },
     { titulo: 'Outras Receitas', valor: d.totalReceitas, cor: 'text-emerald-600' },
   ]
 
@@ -176,6 +177,44 @@ export default async function ContasAReceberPage() {
                     <TableCell className="font-medium">{r.descricao}</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{r.categoria}</TableCell>
                     <TableCell className="text-right font-semibold text-emerald-600">{formatBRL(r.valor)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </section>
+      )}
+
+      {/* Parcelas de cartão */}
+      {d.parcelasPendentes.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+            <CreditCard className="h-4 w-4" /> Parcelas de Cartão Pendentes
+            <span className="text-xs font-normal">({d.parcelasPendentes.length} · {formatBRL(d.totalParcelas)})</span>
+          </h2>
+          <div className="rounded-lg border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Vencimento</TableHead>
+                  <TableHead>Profissional</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead>Cartão</TableHead>
+                  <TableHead>Parcela</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {d.parcelasPendentes.map(p => (
+                  <TableRow key={p.id}>
+                    <TableCell className="text-sm whitespace-nowrap">
+                      {format(parseISO(p.dataVencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                    </TableCell>
+                    <TableCell className="font-medium">{p.profissional}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground max-w-xs truncate">{p.descricao}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{p.bandeira} · {p.tipo === 'CREDITO' ? 'Crédito' : 'Débito'}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{p.numero}/{p.total}</TableCell>
+                    <TableCell className="text-right font-semibold text-purple-600">{formatBRL(p.valor)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

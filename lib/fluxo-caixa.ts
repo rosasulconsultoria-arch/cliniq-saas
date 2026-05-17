@@ -5,7 +5,7 @@ export async function getFluxoCaixa(inicio: string, fim: string) {
   const dtInicio = new Date(inicio)
   const dtFim = new Date(fim)
 
-  const [entradas, saidas, saldoAnterior] = await Promise.all([
+  const [entradas, saidas, saldoAnterior, parcelasVencendo] = await Promise.all([
     // Receitas pagas no período
     db.transacaoFinanceira.findMany({
       where: { tipo: 'RECEITA', status: 'PAGO', data: { gte: dtInicio, lte: dtFim } },
@@ -22,6 +22,15 @@ export async function getFluxoCaixa(inicio: string, fim: string) {
     db.transacaoFinanceira.aggregate({
       where: { status: 'PAGO', data: { lt: dtInicio } },
       _sum: { valor: true },
+    }),
+    // Parcelas de cartão com vencimento no período (previstas)
+    db.parcela.findMany({
+      where: {
+        dataVencimento: { gte: dtInicio, lte: dtFim },
+        parcelamento: { status: 'ATIVO' },
+      },
+      include: { parcelamento: { select: { descricao: true, bandeira: true, profissionalId: true } } },
+      orderBy: { dataVencimento: 'asc' },
     }),
   ])
 
@@ -44,6 +53,12 @@ export async function getFluxoCaixa(inicio: string, fim: string) {
   const entradasPorDia = new Map<string, number>()
   const saidasPorDia = new Map<string, number>()
 
+  // Parcelas pagas (já recebidas)
+  for (const p of parcelasVencendo.filter(p => p.status === 'PAGO')) {
+    const k = format(new Date(p.dataVencimento), 'yyyy-MM-dd')
+    entradasPorDia.set(k, (entradasPorDia.get(k) ?? 0) + Number(p.valor))
+  }
+
   for (const t of entradas) {
     const k = format(new Date(t.data), 'yyyy-MM-dd')
     entradasPorDia.set(k, (entradasPorDia.get(k) ?? 0) + Number(t.valor))
@@ -62,12 +77,22 @@ export async function getFluxoCaixa(inicio: string, fim: string) {
     return { data: k, entradas: e, saidas: s, saldo: saldoAcumulado }
   })
 
+  const parcelasPrevistas = parcelasVencendo.filter(p => p.status === 'PENDENTE')
+
   return {
     saldoInicial: saldoInicialReal,
     totalEntradas,
     totalSaidas,
+    totalParcelasPrevistas: parcelasPrevistas.reduce((s, p) => s + Number(p.valor), 0),
     saldoFinal: saldoInicialReal + totalEntradas - totalSaidas,
     fluxoDiario,
+    parcelasPrevistas: parcelasPrevistas.map(p => ({
+      id: p.id,
+      data: format(new Date(p.dataVencimento), 'yyyy-MM-dd'),
+      descricao: `${p.parcelamento.descricao} (${p.parcelamento.bandeira})`,
+      valor: Number(p.valor),
+      status: p.status,
+    })),
     lancamentos: [
       ...entradas.map(t => ({
         data: format(new Date(t.data), 'yyyy-MM-dd'),

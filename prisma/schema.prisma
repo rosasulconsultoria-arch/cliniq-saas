@@ -79,6 +79,7 @@ model Profissional {
   alugueis         Aluguel[]
   transacoes       TransacaoFinanceira[]
   despesas         DespesaProfissional[]
+  parcelamentos    Parcelamento[]
 
   @@index([slugAgendamento])
 }
@@ -153,8 +154,9 @@ model Agendamento {
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
-  comissao   Comissao?
-  transacoes TransacaoFinanceira[]
+  comissao      Comissao?
+  transacoes    TransacaoFinanceira[]
+  parcelamentos Parcelamento[]
 
   @@index([dataHoraInicio])
   @@index([profissionalId])
@@ -210,6 +212,41 @@ model Comissao {
   observacao     String?
 
   @@index([profissionalId])
+}
+
+model Parcelamento {
+  id             String       @id @default(cuid())
+  profissionalId String
+  profissional   Profissional @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+  agendamentoId  String?
+  agendamento    Agendamento? @relation(fields: [agendamentoId], references: [id], onDelete: SetNull)
+  descricao      String
+  valorTotal     Decimal      @db.Decimal(10, 2)
+  bandeira       String
+  tipoPagamento  String
+  taxaCartao     Decimal      @db.Decimal(5, 2) @default(0)
+  totalParcelas  Int
+  valorLiquido   Decimal      @db.Decimal(10, 2)
+  status         String       @default("ATIVO")
+  createdAt      DateTime     @default(now())
+
+  parcelas       Parcela[]
+
+  @@index([profissionalId])
+}
+
+model Parcela {
+  id             String       @id @default(cuid())
+  parcelamentoId String
+  parcelamento   Parcelamento @relation(fields: [parcelamentoId], references: [id], onDelete: Cascade)
+  numero         Int
+  dataVencimento DateTime     @db.Date
+  valor          Decimal      @db.Decimal(10, 2)
+  status         String       @default("PENDENTE")
+  dataPagamento  DateTime?
+
+  @@index([parcelamentoId])
+  @@index([dataVencimento])
 }
 
 model DespesaProfissional {

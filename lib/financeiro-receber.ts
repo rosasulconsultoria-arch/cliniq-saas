@@ -2,7 +2,7 @@ import { db } from '@/lib/db'
 import { startOfMonth, endOfMonth } from 'date-fns'
 
 export async function getContasAReceber() {
-  const [agendamentosPendentes, comissoesPendentes, alugueisPendentes, receitasPendentes] =
+  const [agendamentosPendentes, comissoesPendentes, alugueisPendentes, receitasPendentes, parcelasPendentes] =
     await Promise.all([
       // Atendimentos agendados/confirmados (futura receita)
       db.agendamento.findMany({
@@ -36,13 +36,24 @@ export async function getContasAReceber() {
         include: { categoria: { select: { nome: true } } },
         orderBy: { data: 'desc' },
       }),
+      // Parcelas de cartão pendentes
+      db.parcela.findMany({
+        where: { status: 'PENDENTE', parcelamento: { status: 'ATIVO' } },
+        include: {
+          parcelamento: {
+            include: { profissional: { include: { user: { select: { name: true } } } } },
+          },
+        },
+        orderBy: { dataVencimento: 'asc' },
+      }),
     ])
 
   const totalAtendimentos = agendamentosPendentes.reduce((s, a) => s + Number(a.valor), 0)
   const totalComissoes = comissoesPendentes.reduce((s, c) => s + Number(c.valorComissao), 0)
   const totalAlugueis = alugueisPendentes.reduce((s, a) => s + Number(a.valor), 0)
   const totalReceitas = receitasPendentes.reduce((s, t) => s + Number(t.valor), 0)
-  const totalGeral = totalAtendimentos + totalComissoes + totalAlugueis + totalReceitas
+  const totalParcelas = parcelasPendentes.reduce((s, p) => s + Number(p.valor), 0)
+  const totalGeral = totalAtendimentos + totalComissoes + totalAlugueis + totalReceitas + totalParcelas
 
   return {
     totalGeral,
@@ -50,6 +61,18 @@ export async function getContasAReceber() {
     totalComissoes,
     totalAlugueis,
     totalReceitas,
+    totalParcelas,
+    parcelasPendentes: parcelasPendentes.map(p => ({
+      id: p.id,
+      numero: p.numero,
+      total: p.parcelamento.totalParcelas,
+      descricao: p.parcelamento.descricao,
+      profissional: p.parcelamento.profissional.user.name,
+      bandeira: p.parcelamento.bandeira,
+      tipo: p.parcelamento.tipoPagamento,
+      dataVencimento: p.dataVencimento.toISOString(),
+      valor: Number(p.valor),
+    })),
     agendamentosPendentes: agendamentosPendentes.map(a => ({
       id: a.id,
       paciente: a.paciente.nome,

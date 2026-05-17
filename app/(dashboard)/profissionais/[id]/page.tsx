@@ -13,6 +13,7 @@ import { ProfissionalForm } from '@/components/profissionais/form'
 import { DisponibilidadeTab } from '@/components/profissionais/disponibilidade-tab'
 import { BloqueioTab } from '@/components/profissionais/bloqueio-tab'
 import { ProfissionalQRCode } from '@/components/profissionais/qr-code'
+import { ParcelamentosTab } from '@/components/parcelamentos/parcelamentos-tab'
 import { formatBRL } from '@/lib/utils'
 
 interface Props {
@@ -20,7 +21,7 @@ interface Props {
 }
 
 export default async function EditarProfissionalPage({ params }: Props) {
-  const [profissional, comissoes, alugueis] = await Promise.all([
+  const [profissional, comissoes, alugueis, parcelamentos] = await Promise.all([
     db.profissional.findUnique({
       where: { id: params.id },
       include: {
@@ -38,6 +39,11 @@ export default async function EditarProfissionalPage({ params }: Props) {
     db.aluguel.findMany({
       where: { profissionalId: params.id },
       orderBy: { mesReferencia: 'desc' },
+    }),
+    db.parcelamento.findMany({
+      where: { profissionalId: params.id },
+      include: { parcelas: { orderBy: { numero: 'asc' } } },
+      orderBy: { createdAt: 'desc' },
     }),
   ])
 
@@ -95,9 +101,10 @@ export default async function EditarProfissionalPage({ params }: Props) {
       </div>
 
       <Tabs defaultValue="dados">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="dados">Dados</TabsTrigger>
           <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
+          <TabsTrigger value="parcelamentos">Parcelamentos</TabsTrigger>
           <TabsTrigger value="disponibilidade">Disponibilidade</TabsTrigger>
           <TabsTrigger value="bloqueios">Bloqueios</TabsTrigger>
         </TabsList>
@@ -237,6 +244,25 @@ export default async function EditarProfissionalPage({ params }: Props) {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        <TabsContent value="parcelamentos">
+          <ParcelamentosTab
+            profissionalId={params.id}
+            parcelamentos={parcelamentos.map(p => ({
+              ...p,
+              valorTotal: Number(p.valorTotal),
+              valorLiquido: Number(p.valorLiquido),
+              taxaCartao: Number(p.taxaCartao),
+              createdAt: p.createdAt.toISOString(),
+              parcelas: p.parcelas.map(parc => ({
+                ...parc,
+                valor: Number(parc.valor),
+                dataVencimento: parc.dataVencimento.toISOString(),
+                dataPagamento: parc.dataPagamento?.toISOString() ?? null,
+              })),
+            }))}
+          />
         </TabsContent>
 
         <TabsContent value="disponibilidade">
