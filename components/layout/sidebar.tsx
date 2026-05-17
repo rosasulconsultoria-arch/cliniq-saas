@@ -13,6 +13,7 @@ import {
   BarChart3,
   Settings,
   Receipt,
+  HelpCircle,
 } from 'lucide-react'
 import type { DashboardUser } from './dashboard-shell'
 
@@ -70,6 +71,12 @@ const NAV_ITEMS = [
     label: 'Configurações',
     icon: Settings,
     roles: ['ADMIN'],
+  },
+  {
+    href: '/ajuda',
+    label: 'Ajuda',
+    icon: HelpCircle,
+    roles: ['ADMIN', 'PROFISSIONAL', 'RECEPCAO'],
   },
 ]
 
