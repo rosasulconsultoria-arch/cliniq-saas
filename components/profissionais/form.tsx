@@ -139,10 +139,17 @@ export function ProfissionalForm({ defaultValues, isEdit = false, id, slugAgenda
         )}
 
         {tipoVinculo === 'LOCATARIO' && (
-          <div className="space-y-1.5 max-w-xs">
-            <Label htmlFor="valorAluguelMensal">Aluguel Mensal (R$) *</Label>
-            <Input id="valorAluguelMensal" type="number" min="0" step="0.01" placeholder="800.00" {...register('valorAluguelMensal', { valueAsNumber: true })} />
-            {errors.valorAluguelMensal && <p className="text-xs text-destructive">{errors.valorAluguelMensal.message}</p>}
+          <div className="grid gap-4 sm:grid-cols-2 max-w-sm">
+            <div className="space-y-1.5">
+              <Label htmlFor="valorAluguelMensal">Aluguel Mensal (R$) *</Label>
+              <Input id="valorAluguelMensal" type="number" min="0" step="0.01" placeholder="800.00" {...register('valorAluguelMensal', { valueAsNumber: true })} />
+              {errors.valorAluguelMensal && <p className="text-xs text-destructive">{errors.valorAluguelMensal.message}</p>}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="mesesContrato">Duração do contrato (meses)</Label>
+              <Input id="mesesContrato" type="number" min="1" max="60" step="1" placeholder="Ex: 12" {...register('mesesContrato', { valueAsNumber: true })} />
+              <p className="text-xs text-muted-foreground">Gera cobranças automaticamente</p>
+            </div>
           </div>
         )}
       </section>

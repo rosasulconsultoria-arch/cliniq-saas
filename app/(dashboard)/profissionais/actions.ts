@@ -10,7 +10,7 @@ export async function criarProfissional(data: unknown): Promise<{ error?: string
   const parsed = ProfissionalSchema.safeParse(data)
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Dados inválidos' }
 
-  const { nome, email, senha, especialidade, crp, tipoVinculo, comissaoPercentual, valorAluguelMensal, valorConsultaPadrao, bio, ativo } = parsed.data
+  const { nome, email, senha, especialidade, crp, tipoVinculo, comissaoPercentual, valorAluguelMensal, mesesContrato, valorConsultaPadrao, bio, ativo } = parsed.data
 
   if (!senha) return { error: 'Senha é obrigatória ao cadastrar profissional' }
 
@@ -27,7 +27,7 @@ export async function criarProfissional(data: unknown): Promise<{ error?: string
       const user = await tx.user.create({
         data: { name: nome, email, passwordHash: hash, role: 'PROFISSIONAL', active: true },
       })
-      await tx.profissional.create({
+      const prof = await tx.profissional.create({
         data: {
           userId: user.id,
           especialidade,
@@ -35,12 +35,28 @@ export async function criarProfissional(data: unknown): Promise<{ error?: string
           tipoVinculo,
           comissaoPercentual: tipoVinculo === 'COMISSIONADO' ? comissaoPercentual : null,
           valorAluguelMensal: tipoVinculo === 'LOCATARIO' ? valorAluguelMensal : null,
+          mesesContrato: tipoVinculo === 'LOCATARIO' ? (mesesContrato ?? null) : null,
           valorConsultaPadrao: valorConsultaPadrao ?? null,
           slugAgendamento: slug,
           bio: bio || null,
           ativo: ativo ?? true,
         },
       })
+
+      // Auto-gerar aluguéis para todo o período do contrato
+      if (tipoVinculo === 'LOCATARIO' && valorAluguelMensal && mesesContrato && mesesContrato > 0) {
+        const hoje = new Date()
+        const alugueis = Array.from({ length: mesesContrato }, (_, i) => {
+          const mes = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1)
+          return {
+            profissionalId: prof.id,
+            mesReferencia: mes,
+            valor: valorAluguelMensal,
+            status: 'PENDENTE' as const,
+          }
+        })
+        await tx.aluguel.createMany({ data: alugueis })
+      }
     })
     revalidatePath('/profissionais')
     return {}

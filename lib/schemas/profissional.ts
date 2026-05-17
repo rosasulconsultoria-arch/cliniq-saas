@@ -17,6 +17,7 @@ export const ProfissionalSchema = z
     tipoVinculo: z.enum(['COMISSIONADO', 'LOCATARIO']),
     comissaoPercentual: z.preprocess(toOptionalNumber, z.number().min(0).max(100).nullable().optional()),
     valorAluguelMensal: z.preprocess(toOptionalNumber, z.number().min(0).nullable().optional()),
+    mesesContrato: z.preprocess(toOptionalNumber, z.number().int().min(1).max(60).nullable().optional()),
     valorConsultaPadrao: z.preprocess(toOptionalNumber, z.number().min(0).nullable().optional()),
     bio: z.string().optional(),
     ativo: z.boolean().default(true),

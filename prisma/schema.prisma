@@ -65,6 +65,7 @@ model Profissional {
   tipoVinculo        TipoVinculo
   comissaoPercentual Decimal?    @db.Decimal(5, 2)
   valorAluguelMensal Decimal?    @db.Decimal(10, 2)
+  mesesContrato      Int?
   slugAgendamento     String      @unique
   valorConsultaPadrao Decimal?   @db.Decimal(10, 2)
   bio                String?
@@ -145,6 +146,8 @@ model Agendamento {
   dataHoraFim    DateTime
   status         StatusAgendamento @default(AGENDADO)
   valor          Decimal           @db.Decimal(10, 2)
+  tipoCobranca   String            @default("CONSULTA")
+  totalSessoes   Int?
   origem         OrigemAgendamento @default(INTERNO)
   observacoes    String?
   createdAt      DateTime          @default(now())

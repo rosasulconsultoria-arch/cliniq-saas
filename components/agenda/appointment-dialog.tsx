@@ -44,6 +44,8 @@ export function AgendamentoDialog({ open, onClose, slot, profissionais, salas, u
     defaultValues: {
       duracao: 50,
       valor: 0,
+      tipoCobranca: 'CONSULTA',
+      totalSessoes: null,
       origem: 'INTERNO',
       profissionalId: userRole === 'PROFISSIONAL' && userProfissionalId ? userProfissionalId : '',
       pacienteId: '',
@@ -52,6 +54,7 @@ export function AgendamentoDialog({ open, onClose, slot, profissionais, salas, u
   })
 
   const { watch, setValue, control, register, handleSubmit, reset, formState: { errors } } = form
+  const tipoCobranca = watch('tipoCobranca')
 
   // Pre-fill date/time from clicked slot
   useEffect(() => {
@@ -167,11 +170,38 @@ export function AgendamentoDialog({ open, onClose, slot, profissionais, salas, u
             </div>
           </div>
 
-          {/* Valor */}
+          {/* Tipo de cobrança */}
           <div className="space-y-1.5">
-            <Label>Valor (R$)</Label>
-            <Input type="number" min="0" step="0.01" placeholder="0.00" {...register('valor', { valueAsNumber: true })} />
-            {errors.valor && <p className="text-xs text-destructive">{errors.valor.message}</p>}
+            <Label>Tipo de cobrança</Label>
+            <Controller
+              control={control}
+              name="tipoCobranca"
+              render={({ field }) => (
+                <Select value={field.value} onValueChange={v => { field.onChange(v); if (v === 'CONSULTA') setValue('totalSessoes', null) }}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CONSULTA">Consulta avulsa</SelectItem>
+                    <SelectItem value="PACOTE">Pacote de sessões (valor único)</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
+          </div>
+
+          {/* Valor + Sessões */}
+          <div className={tipoCobranca === 'PACOTE' ? 'grid grid-cols-2 gap-3' : ''}>
+            <div className="space-y-1.5">
+              <Label>{tipoCobranca === 'PACOTE' ? 'Valor total do pacote (R$)' : 'Valor (R$)'}</Label>
+              <Input type="number" min="0" step="0.01" placeholder="0.00" {...register('valor', { valueAsNumber: true })} />
+              {errors.valor && <p className="text-xs text-destructive">{errors.valor.message}</p>}
+            </div>
+            {tipoCobranca === 'PACOTE' && (
+              <div className="space-y-1.5">
+                <Label>Número de sessões *</Label>
+                <Input type="number" min="2" step="1" placeholder="Ex: 10" {...register('totalSessoes', { valueAsNumber: true })} />
+                {errors.totalSessoes && <p className="text-xs text-destructive">{errors.totalSessoes.message}</p>}
+              </div>
+            )}
           </div>
 
           {/* Observações */}

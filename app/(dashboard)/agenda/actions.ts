@@ -178,6 +178,7 @@ export async function atualizarStatusAgendamento(
       where: { id },
       include: {
         profissional: { select: { tipoVinculo: true, comissaoPercentual: true } },
+        paciente: { select: { nome: true } },
       },
     })
     if (!agendamento) return { error: 'Agendamento não encontrado' }
@@ -207,33 +208,43 @@ export async function atualizarStatusAgendamento(
                 valorComissao,
                 valorClinica,
                 status: 'PENDENTE',
+                observacao: agendamento.tipoCobranca === 'PACOTE'
+                  ? `Pacote de ${agendamento.totalSessoes} sessões — ${agendamento.paciente.nome}`
+                  : null,
               },
             })
           }
         }
 
-        // Cria transação financeira de receita
-        const categoria = await tx.categoriaFinanceira.findFirst({
-          where: { tipo: 'RECEITA' },
-          orderBy: { nome: 'asc' },
-        })
-        if (categoria) {
-          const transacaoExistente = await tx.transacaoFinanceira.findFirst({
-            where: { agendamentoId: id, tipo: 'RECEITA' },
+        // Cria transação financeira de receita (somente para LOCATARIO — COMISSIONADO gera receita via pagarComissao)
+        const prof = agendamento.profissional
+        if (prof.tipoVinculo === 'LOCATARIO') {
+          const categoria = await tx.categoriaFinanceira.findFirst({
+            where: { tipo: 'RECEITA' },
+            orderBy: { nome: 'asc' },
           })
-          if (!transacaoExistente) {
-            await tx.transacaoFinanceira.create({
-              data: {
-                tipo: 'RECEITA',
-                categoriaId: categoria.id,
-                descricao: `Consulta — ${agendamento.pacienteId}`,
-                valor: agendamento.valor,
-                data: new Date(),
-                status: 'PAGO',
-                agendamentoId: id,
-                profissionalId: agendamento.profissionalId,
-              },
+          if (categoria) {
+            const transacaoExistente = await tx.transacaoFinanceira.findFirst({
+              where: { agendamentoId: id, tipo: 'RECEITA' },
             })
+            if (!transacaoExistente) {
+              const isPacote = agendamento.tipoCobranca === 'PACOTE'
+              const descricao = isPacote
+                ? `Pacote ${agendamento.totalSessoes} sessões — ${agendamento.paciente.nome}`
+                : `Consulta — ${agendamento.paciente.nome}`
+              await tx.transacaoFinanceira.create({
+                data: {
+                  tipo: 'RECEITA',
+                  categoriaId: categoria.id,
+                  descricao,
+                  valor: agendamento.valor,
+                  data: new Date(),
+                  status: 'PAGO',
+                  agendamentoId: id,
+                  profissionalId: agendamento.profissionalId,
+                },
+              })
+            }
           }
         }
       })
