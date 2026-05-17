@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Plus, Lock } from 'lucide-react'
 import { formatBRL } from '@/lib/utils'
 import { DeleteDespesaButton } from '@/components/meu-financeiro/delete-button'
+import { MarcarPagoButton } from '@/components/meu-financeiro/marcar-pago-button'
 
 export default async function MeuFinanceiroPage() {
   const session = await auth()
@@ -118,9 +119,10 @@ export default async function MeuFinanceiroPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Mês de Referência</TableHead>
-                  <TableHead>Descrição</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Pagamento</TableHead>
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -129,9 +131,18 @@ export default async function MeuFinanceiroPage() {
                     <TableCell className="text-sm whitespace-nowrap">
                       {format(new Date(a.mesReferencia), 'MMMM yyyy', { locale: ptBR })}
                     </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">Aluguel de sala — gerado automaticamente</TableCell>
                     <TableCell className="text-right font-semibold text-red-500">{formatBRL(Number(a.valor))}</TableCell>
                     <TableCell>{statusBadge(a.status)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{(a as any).formaPagamento ?? '—'}</TableCell>
+                    <TableCell>
+                      {a.status === 'PENDENTE' && (
+                        <MarcarPagoButton
+                          id={a.id}
+                          tipo="aluguel"
+                          descricao={`Aluguel — ${format(new Date(a.mesReferencia), 'MMMM yyyy', { locale: ptBR })} — ${formatBRL(Number(a.valor))}`}
+                        />
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -154,6 +165,8 @@ export default async function MeuFinanceiroPage() {
                   <TableHead>Valor Bruto</TableHead>
                   <TableHead className="text-right">Comissão ({Number(profissional.comissaoPercentual)}%)</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Pagamento</TableHead>
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -165,6 +178,16 @@ export default async function MeuFinanceiroPage() {
                     <TableCell className="text-sm text-muted-foreground">{formatBRL(Number(c.valorBruto))}</TableCell>
                     <TableCell className="text-right font-semibold text-red-500">{formatBRL(Number(c.valorComissao))}</TableCell>
                     <TableCell>{statusBadge(c.status)}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{(c as any).formaPagamento ?? '—'}</TableCell>
+                    <TableCell>
+                      {c.status === 'PENDENTE' && (
+                        <MarcarPagoButton
+                          id={c.id}
+                          tipo="comissao"
+                          descricao={`Comissão consulta ${format(new Date(c.agendamento.dataHoraInicio), 'dd/MM/yyyy')} — ${formatBRL(Number(c.valorComissao))}`}
+                        />
+                      )}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -193,6 +216,7 @@ export default async function MeuFinanceiroPage() {
                   <TableHead>Categoria</TableHead>
                   <TableHead className="text-right">Valor</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Pagamento</TableHead>
                   <TableHead />
                 </TableRow>
               </TableHeader>
@@ -206,7 +230,17 @@ export default async function MeuFinanceiroPage() {
                     <TableCell className="text-sm text-muted-foreground">{d.categoria}</TableCell>
                     <TableCell className="text-right font-semibold text-red-500">{formatBRL(Number(d.valor))}</TableCell>
                     <TableCell>{statusBadge(d.status)}</TableCell>
-                    <TableCell><DeleteDespesaButton id={d.id} /></TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{d.formaPagamento ?? '—'}</TableCell>
+                    <TableCell className="flex gap-1">
+                      {d.status === 'PENDENTE' && (
+                        <MarcarPagoButton
+                          id={d.id}
+                          tipo="despesa"
+                          descricao={`${d.descricao} — ${formatBRL(Number(d.valor))}`}
+                        />
+                      )}
+                      <DeleteDespesaButton id={d.id} />
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

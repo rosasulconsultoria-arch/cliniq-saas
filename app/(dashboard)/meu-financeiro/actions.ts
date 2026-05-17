@@ -70,3 +70,39 @@ export async function deletarDespesa(id: string): Promise<{ error?: string }> {
   revalidatePath('/meu-financeiro')
   return {}
 }
+
+export async function marcarDespesaPaga(id: string, formaPagamento: string): Promise<{ error?: string }> {
+  const profissionalId = await getProfissionalId()
+  if (!profissionalId) return { error: 'Profissional não encontrado' }
+
+  await db.despesaProfissional.updateMany({
+    where: { id, profissionalId },
+    data: { status: 'PAGO', formaPagamento, dataPagamento: new Date() },
+  })
+  revalidatePath('/meu-financeiro')
+  return {}
+}
+
+export async function marcarAluguelPago(id: string, formaPagamento: string): Promise<{ error?: string }> {
+  const profissionalId = await getProfissionalId()
+  if (!profissionalId) return { error: 'Profissional não encontrado' }
+
+  await db.aluguel.updateMany({
+    where: { id, profissionalId },
+    data: { status: 'PAGO', formaPagamento, dataPagamento: new Date() },
+  })
+  revalidatePath('/meu-financeiro')
+  return {}
+}
+
+export async function marcarComissaoPaga(id: string, formaPagamento: string): Promise<{ error?: string }> {
+  const profissionalId = await getProfissionalId()
+  if (!profissionalId) return { error: 'Profissional não encontrado' }
+
+  await db.comissao.updateMany({
+    where: { id, profissionalId },
+    data: { status: 'PAGO', formaPagamento, dataPagamento: new Date() },
+  })
+  revalidatePath('/meu-financeiro')
+  return {}
+}

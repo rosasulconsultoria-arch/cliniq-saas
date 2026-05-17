@@ -202,6 +202,7 @@ model Comissao {
   valorComissao  Decimal          @db.Decimal(10, 2)
   valorClinica   Decimal          @db.Decimal(10, 2)
   status         StatusFinanceiro @default(PENDENTE)
+  formaPagamento String?
   dataPagamento  DateTime?
 
   @@index([profissionalId])
@@ -216,6 +217,8 @@ model DespesaProfissional {
   data           DateTime         @db.Date
   categoria      String
   status         StatusFinanceiro @default(PENDENTE)
+  formaPagamento String?
+  dataPagamento  DateTime?
   observacao     String?
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
@@ -231,6 +234,7 @@ model Aluguel {
   mesReferencia  DateTime         @db.Date
   valor          Decimal          @db.Decimal(10, 2)
   status         StatusFinanceiro @default(PENDENTE)
+  formaPagamento String?
   dataPagamento  DateTime?
 
   @@index([profissionalId])
