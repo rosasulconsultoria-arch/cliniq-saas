@@ -1,10 +1,5 @@
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from '@/components/ui/accordion'
 import { Badge } from '@/components/ui/badge'
+import { AjudaAccordion } from './ajuda-accordion'
 
 const SECOES = [
   {
@@ -169,18 +164,7 @@ export function AjudaAdmin() {
             <h2 className="text-sm font-semibold text-foreground">{secao.titulo}</h2>
             <Badge variant="outline" className="text-xs">{secao.badge}</Badge>
           </div>
-          <Accordion type="multiple" className="rounded-lg border bg-card divide-y">
-            {secao.itens.map((item, i) => (
-              <AccordionItem key={i} value={`${secao.id}-${i}`} className="border-0 px-4">
-                <AccordionTrigger className="text-sm font-medium py-3 hover:no-underline text-left">
-                  {item.pergunta}
-                </AccordionTrigger>
-                <AccordionContent className="text-sm text-muted-foreground pb-4 leading-relaxed">
-                  {item.resposta}
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
+          <AjudaAccordion items={secao.itens} prefix={secao.id} />
         </div>
       ))}
     </div>
