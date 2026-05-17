@@ -6,6 +6,8 @@ import { cn } from '@/lib/utils'
 
 const NAV = [
   { href: '/financeiro', label: 'Visão Geral', exact: true },
+  { href: '/financeiro/contas-a-receber', label: 'Contas a Receber' },
+  { href: '/financeiro/fluxo-de-caixa', label: 'Fluxo de Caixa' },
   { href: '/financeiro/receitas', label: 'Receitas' },
   { href: '/financeiro/despesas', label: 'Despesas' },
   { href: '/financeiro/investimentos', label: 'Investimentos' },

@@ -1,0 +1,194 @@
+import { getContasAReceber } from '@/lib/financeiro-receber'
+import { format, parseISO } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
+import { formatBRL } from '@/lib/utils'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { CalendarClock, Handshake, Building2, Receipt } from 'lucide-react'
+
+export default async function ContasAReceberPage() {
+  const d = await getContasAReceber()
+
+  const STATUS_LABEL: Record<string, string> = {
+    AGENDADO: 'Agendado',
+    CONFIRMADO: 'Confirmado',
+  }
+  const STATUS_COR: Record<string, string> = {
+    AGENDADO: 'border-blue-400 text-blue-600',
+    CONFIRMADO: 'border-green-400 text-green-600',
+  }
+
+  const cards = [
+    { titulo: 'Total a Receber', valor: d.totalGeral, cor: 'text-indigo-600', destaque: true },
+    { titulo: 'Atendimentos Futuros', valor: d.totalAtendimentos, cor: 'text-blue-600' },
+    { titulo: 'Comissões Pendentes', valor: d.totalComissoes, cor: 'text-amber-600' },
+    { titulo: 'Aluguéis Pendentes', valor: d.totalAlugueis, cor: 'text-orange-600' },
+    { titulo: 'Outras Receitas', valor: d.totalReceitas, cor: 'text-emerald-600' },
+  ]
+
+  return (
+    <div className="space-y-8">
+      {/* KPIs */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        {cards.map(c => (
+          <Card key={c.titulo} className="shadow-sm">
+            <CardContent className="pt-4 pb-4">
+              <p className="text-xs text-muted-foreground">{c.titulo}</p>
+              <p className={`text-xl font-bold mt-1 ${c.cor}`}>{formatBRL(c.valor)}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Atendimentos futuros */}
+      {d.agendamentosPendentes.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+            <CalendarClock className="h-4 w-4" /> Atendimentos Agendados
+            <span className="text-xs font-normal">({d.agendamentosPendentes.length} consultas · {formatBRL(d.totalAtendimentos)})</span>
+          </h2>
+          <div className="rounded-lg border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Paciente</TableHead>
+                  <TableHead>Profissional</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {d.agendamentosPendentes.map(a => (
+                  <TableRow key={a.id}>
+                    <TableCell className="text-sm whitespace-nowrap">
+                      {format(parseISO(a.data), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                    </TableCell>
+                    <TableCell className="font-medium">{a.paciente}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{a.profissional}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={STATUS_COR[a.status] ?? ''}>
+                        {STATUS_LABEL[a.status] ?? a.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right font-semibold text-emerald-600">{formatBRL(a.valor)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </section>
+      )}
+
+      {/* Comissões pendentes */}
+      {d.comissoesPendentes.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+            <Handshake className="h-4 w-4" /> Comissões a Receber
+            <span className="text-xs font-normal">({d.comissoesPendentes.length} · {formatBRL(d.totalComissoes)})</span>
+          </h2>
+          <div className="rounded-lg border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Profissional</TableHead>
+                  <TableHead>Data da Consulta</TableHead>
+                  <TableHead>Valor Bruto</TableHead>
+                  <TableHead className="text-right">Comissão</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {d.comissoesPendentes.map(c => (
+                  <TableRow key={c.id}>
+                    <TableCell className="font-medium">{c.profissional}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {format(parseISO(c.dataConsulta), 'dd/MM/yyyy', { locale: ptBR })}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{formatBRL(c.valorBruto)}</TableCell>
+                    <TableCell className="text-right font-semibold text-amber-600">
+                      {formatBRL(c.valorComissao)}
+                      <span className="text-xs text-muted-foreground ml-1">({c.percentual}%)</span>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </section>
+      )}
+
+      {/* Aluguéis pendentes */}
+      {d.alugueisPendentes.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+            <Building2 className="h-4 w-4" /> Aluguéis a Receber
+            <span className="text-xs font-normal">({d.alugueisPendentes.length} · {formatBRL(d.totalAlugueis)})</span>
+          </h2>
+          <div className="rounded-lg border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Profissional</TableHead>
+                  <TableHead>Mês de Referência</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {d.alugueisPendentes.map(a => (
+                  <TableRow key={a.id}>
+                    <TableCell className="font-medium">{a.profissional}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground capitalize">
+                      {format(parseISO(a.mesReferencia), 'MMMM yyyy', { locale: ptBR })}
+                    </TableCell>
+                    <TableCell className="text-right font-semibold text-orange-600">{formatBRL(a.valor)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </section>
+      )}
+
+      {/* Outras receitas pendentes */}
+      {d.receitasPendentes.length > 0 && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+            <Receipt className="h-4 w-4" /> Outras Receitas Pendentes
+            <span className="text-xs font-normal">({d.receitasPendentes.length} · {formatBRL(d.totalReceitas)})</span>
+          </h2>
+          <div className="rounded-lg border bg-card">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Descrição</TableHead>
+                  <TableHead>Categoria</TableHead>
+                  <TableHead className="text-right">Valor</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {d.receitasPendentes.map(r => (
+                  <TableRow key={r.id}>
+                    <TableCell className="text-sm whitespace-nowrap">
+                      {format(parseISO(r.data), 'dd/MM/yyyy', { locale: ptBR })}
+                    </TableCell>
+                    <TableCell className="font-medium">{r.descricao}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">{r.categoria}</TableCell>
+                    <TableCell className="text-right font-semibold text-emerald-600">{formatBRL(r.valor)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </section>
+      )}
+
+      {d.totalGeral === 0 && (
+        <div className="text-center py-16 text-muted-foreground">
+          <p className="text-sm">Nenhum valor pendente a receber.</p>
+        </div>
+      )}
+    </div>
+  )
+}
