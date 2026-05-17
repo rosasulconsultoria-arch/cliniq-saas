@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
+import { db } from '@/lib/db'
 import { DashboardShell } from '@/components/layout/dashboard-shell'
 
 export default async function DashboardLayout({
@@ -13,6 +14,8 @@ export default async function DashboardLayout({
     redirect('/login')
   }
 
+  const config = await db.configClinica.findUnique({ where: { id: 'default' } })
+
   return (
     <DashboardShell
       user={{
@@ -21,6 +24,9 @@ export default async function DashboardLayout({
         email: session.user.email ?? '',
         role: session.user.role,
       }}
+      clinicaNome={config?.nome ?? 'Clínica'}
+      clinicaLogo={config?.logoBase64 ?? null}
+      clinicaCor={config?.corPrimaria ?? '#4f46e5'}
     >
       {children}
     </DashboardShell>

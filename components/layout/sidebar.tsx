@@ -75,9 +75,12 @@ const NAV_ITEMS = [
 
 interface SidebarProps {
   user: DashboardUser
+  clinicaNome?: string
+  clinicaLogo?: string | null
+  clinicaCor?: string
 }
 
-export function Sidebar({ user }: SidebarProps) {
+export function Sidebar({ user, clinicaNome = 'Clínica', clinicaLogo, clinicaCor = '#4f46e5' }: SidebarProps) {
   const pathname = usePathname()
 
   const itensVisiveis = NAV_ITEMS.filter((item) =>
@@ -88,14 +91,16 @@ export function Sidebar({ user }: SidebarProps) {
     <div className="flex h-full flex-col border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
       {/* Logo */}
       <div className="flex h-16 shrink-0 items-center gap-3 border-b border-slate-200 dark:border-slate-800 px-5">
-        <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0 shadow-sm">
-          <span className="text-white font-bold text-sm select-none">CP</span>
+        <div className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm overflow-hidden"
+          style={{ backgroundColor: clinicaLogo ? 'transparent' : clinicaCor }}>
+          {clinicaLogo
+            ? <img src={clinicaLogo} alt="logo" className="h-full w-full object-cover" />
+            : <span className="text-white font-bold text-sm select-none">{clinicaNome.charAt(0).toUpperCase()}</span>
+          }
         </div>
         <div className="min-w-0">
-          <p className="font-semibold text-sm leading-tight truncate">Clínica</p>
-          <p className="text-xs text-muted-foreground leading-tight truncate">
-            Sistema de Gestão
-          </p>
+          <p className="font-semibold text-sm leading-tight truncate">{clinicaNome}</p>
+          <p className="text-xs text-muted-foreground leading-tight truncate">Sistema de Gestão</p>
         </div>
       </div>
 

@@ -66,6 +66,7 @@ model Profissional {
   comissaoPercentual Decimal?    @db.Decimal(5, 2)
   valorAluguelMensal Decimal?    @db.Decimal(10, 2)
   mesesContrato      Int?
+  fotoBase64         String?
   slugAgendamento     String      @unique
   valorConsultaPadrao Decimal?   @db.Decimal(10, 2)
   bio                String?
@@ -253,6 +254,14 @@ model Parcela {
 
   @@index([parcelamentoId])
   @@index([dataVencimento])
+}
+
+model ConfigClinica {
+  id          String   @id @default("default")
+  nome        String   @default("Clínica de Psicologia")
+  logoBase64  String?
+  corPrimaria String   @default("#4f46e5")
+  updatedAt   DateTime @updatedAt
 }
 
 model DespesaProfissional {

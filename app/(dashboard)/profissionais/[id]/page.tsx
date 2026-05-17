@@ -121,6 +121,7 @@ export default async function EditarProfissionalPage({ params }: Props) {
                 isEdit
                 id={params.id}
                 slugAgendamento={profissional.slugAgendamento}
+                fotoAtual={(profissional as any).fotoBase64 ?? null}
               />
             </CardContent>
           </Card>

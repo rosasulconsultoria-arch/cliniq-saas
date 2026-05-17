@@ -16,17 +16,20 @@ import { Switch } from '@/components/ui/switch'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Separator } from '@/components/ui/separator'
 import { CopyLinkField } from '@/components/copy-button'
+import { ImageUpload } from '@/components/ui/image-upload'
 
 interface Props {
   defaultValues?: Partial<ProfissionalFormData>
   isEdit?: boolean
   id?: string
   slugAgendamento?: string
+  fotoAtual?: string | null
 }
 
-export function ProfissionalForm({ defaultValues, isEdit = false, id, slugAgendamento }: Props) {
+export function ProfissionalForm({ defaultValues, isEdit = false, id, slugAgendamento, fotoAtual }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  const [foto, setFoto] = useState<string | null>(fotoAtual ?? null)
 
   const {
     register,
@@ -47,8 +50,8 @@ export function ProfissionalForm({ defaultValues, isEdit = false, id, slugAgenda
 
     startTransition(async () => {
       const result = isEdit && id
-        ? await atualizarProfissional(id, data)
-        : await criarProfissional(data)
+        ? await atualizarProfissional(id, { ...data, fotoBase64: foto })
+        : await criarProfissional({ ...data, fotoBase64: foto })
 
       if (result?.error) { toast.error(result.error); return }
       toast.success(isEdit ? 'Profissional atualizado!' : 'Profissional cadastrado!')
@@ -59,6 +62,12 @@ export function ProfissionalForm({ defaultValues, isEdit = false, id, slugAgenda
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+      {/* Foto */}
+      <section className="space-y-4">
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Foto do Profissional</h3>
+        <ImageUpload value={foto} onChange={setFoto} shape="circle" maxKB={250} label="Foto" />
+      </section>
+
       {/* Dados de acesso */}
       <section className="space-y-4">
         <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dados de Acesso</h3>

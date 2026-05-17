@@ -11,6 +11,7 @@ export async function criarProfissional(data: unknown): Promise<{ error?: string
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Dados inválidos' }
 
   const { nome, email, senha, especialidade, crp, tipoVinculo, comissaoPercentual, valorAluguelMensal, mesesContrato, valorConsultaPadrao, bio, ativo } = parsed.data
+  const fotoBase64 = (data as any).fotoBase64 ?? null
 
   if (!senha) return { error: 'Senha é obrigatória ao cadastrar profissional' }
 
@@ -36,6 +37,7 @@ export async function criarProfissional(data: unknown): Promise<{ error?: string
           comissaoPercentual: tipoVinculo === 'COMISSIONADO' ? comissaoPercentual : null,
           valorAluguelMensal: tipoVinculo === 'LOCATARIO' ? valorAluguelMensal : null,
           mesesContrato: tipoVinculo === 'LOCATARIO' ? (mesesContrato ?? null) : null,
+          fotoBase64: fotoBase64 ?? null,
           valorConsultaPadrao: valorConsultaPadrao ?? null,
           slugAgendamento: slug,
           bio: bio || null,
@@ -72,6 +74,7 @@ export async function atualizarProfissional(id: string, data: unknown): Promise<
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Dados inválidos' }
 
   const { nome, email, senha, especialidade, crp, tipoVinculo, comissaoPercentual, valorAluguelMensal, valorConsultaPadrao, bio, ativo } = parsed.data
+  const fotoBase64Edit = (data as any).fotoBase64 ?? undefined
 
   try {
     const prof = await db.profissional.findUnique({ where: { id } })
@@ -93,6 +96,7 @@ export async function atualizarProfissional(id: string, data: unknown): Promise<
           valorConsultaPadrao: valorConsultaPadrao ?? null,
           bio: bio || null,
           ativo: ativo ?? true,
+          ...(fotoBase64Edit !== undefined ? { fotoBase64: fotoBase64Edit } : {}),
         },
       })
     })
