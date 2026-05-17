@@ -7,6 +7,9 @@ import { KPISection } from '@/components/dashboard/kpi-section'
 import dynamic from 'next/dynamic'
 import { PeriodFilter } from '@/components/dashboard/period-filter'
 import { Skeleton } from '@/components/ui/skeleton'
+import { auth } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { ProfissionalDashboard } from '@/components/dashboard/profissional-dashboard'
 
 const DashboardCharts = dynamic(
   () => import('@/components/dashboard/dashboard-charts').then(m => ({ default: m.DashboardCharts })),
@@ -30,6 +33,18 @@ interface Props {
 }
 
 export default async function DashboardPage({ searchParams }: Props) {
+  const session = await auth()
+
+  if (session?.user?.role === 'PROFISSIONAL') {
+    const profissional = await db.profissional.findUnique({
+      where: { userId: session.user.id! },
+      include: { user: { select: { name: true } } },
+    })
+    if (profissional) {
+      return <ProfissionalDashboard profissionalId={profissional.id} nome={profissional.user.name} />
+    }
+  }
+
   const periodo = getSearchParam(searchParams.periodo, 'mes_atual')
   const de = getSearchParam(searchParams.de)
   const ate = getSearchParam(searchParams.ate)
