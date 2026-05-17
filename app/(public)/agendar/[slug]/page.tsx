@@ -23,13 +23,16 @@ export async function generateMetadata({ params }: Props) {
 }
 
 export default async function AgendamentoPublicoPage({ params }: Props) {
-  const profissional = await db.profissional.findUnique({
-    where: { slugAgendamento: params.slug },
-    include: {
-      user: { select: { name: true } },
-      disponibilidades: true,
-    },
-  })
+  const [profissional, config] = await Promise.all([
+    db.profissional.findUnique({
+      where: { slugAgendamento: params.slug },
+      include: {
+        user: { select: { name: true } },
+        disponibilidades: true,
+      },
+    }),
+    db.configClinica.findUnique({ where: { id: 'default' } }),
+  ])
 
   if (!profissional || !profissional.ativo) notFound()
 
@@ -39,6 +42,10 @@ export default async function AgendamentoPublicoPage({ params }: Props) {
 
   const nome = profissional.user.name
   const initials = getInitials(nome)
+  const foto = (profissional as any).fotoBase64 ?? null
+  const clinicaNome = config?.nome ?? 'Clínica de Psicologia'
+  const clinicaLogo = config?.logoBase64 ?? null
+  const clinicaCor = config?.corPrimaria ?? '#4f46e5'
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-indigo-950/20">
@@ -47,18 +54,28 @@ export default async function AgendamentoPublicoPage({ params }: Props) {
         {/* Clinic header */}
         <div className="flex justify-center mb-8">
           <div className="inline-flex items-center gap-2 bg-white dark:bg-slate-900 rounded-full px-4 py-2 shadow-sm border border-border/50">
-            <div className="h-6 w-6 rounded-lg bg-indigo-600 flex items-center justify-center text-white text-xs font-bold select-none">
-              CP
-            </div>
-            <span className="text-sm font-medium text-foreground">Clínica de Psicologia</span>
+            {clinicaLogo ? (
+              <img src={clinicaLogo} alt="logo" className="h-6 w-6 rounded-lg object-cover" />
+            ) : (
+              <div className="h-6 w-6 rounded-lg flex items-center justify-center text-white text-xs font-bold select-none" style={{ backgroundColor: clinicaCor }}>
+                {clinicaNome.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <span className="text-sm font-medium text-foreground">{clinicaNome}</span>
           </div>
         </div>
 
         {/* Professional card */}
         <div className="rounded-2xl border bg-card shadow-sm p-6 mb-6">
           <div className="flex flex-col items-center text-center gap-4">
-            <div className="h-20 w-20 rounded-full bg-indigo-100 dark:bg-indigo-950/40 flex items-center justify-center text-indigo-700 dark:text-indigo-300 text-2xl font-bold shadow-sm">
-              {initials}
+            <div className="h-20 w-20 rounded-full overflow-hidden shadow-sm">
+              {foto ? (
+                <img src={foto} alt={nome} className="h-full w-full object-cover" />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center text-2xl font-bold" style={{ backgroundColor: clinicaCor + '20', color: clinicaCor }}>
+                  {initials}
+                </div>
+              )}
             </div>
             <div>
               <h1 className="text-xl font-bold text-foreground">{nome}</h1>
@@ -93,7 +110,7 @@ export default async function AgendamentoPublicoPage({ params }: Props) {
         )}
 
         <p className="text-center text-xs text-muted-foreground mt-8">
-          © Clínica de Psicologia · Agendamento Online
+          © {clinicaNome} · Agendamento Online
         </p>
       </div>
     </div>

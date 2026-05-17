@@ -12,7 +12,7 @@ export interface AgendamentoDisplay {
   bandeiraCartao?: string | null
   numeroParcelas?: number | null
   confirmacaoEnviada?: boolean
-  profissional: { id: string; nome: string }
+  profissional: { id: string; nome: string; foto?: string | null }
   paciente: { id: string; nome: string; email?: string | null; telefone?: string | null }
   sala: { id: string; nome: string }
 }

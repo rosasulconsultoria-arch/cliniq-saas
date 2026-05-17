@@ -151,7 +151,16 @@ export function WeeklyView({ agendamentos, weekDays, onSlotClick, onAppointmentC
                   onClick={(e) => { e.stopPropagation(); onAppointmentClick(apt) }}
                 >
                   <div className="font-semibold truncate leading-tight">{format(start, 'HH:mm')} {apt.paciente.nome}</div>
-                  <div className="truncate opacity-75 leading-tight">{apt.profissional.nome}</div>
+                  <div className="flex items-center gap-1 truncate opacity-75 leading-tight">
+                    {apt.profissional.foto ? (
+                      <img src={apt.profissional.foto} alt="" className="h-3.5 w-3.5 rounded-full object-cover shrink-0 opacity-90" />
+                    ) : (
+                      <span className="h-3.5 w-3.5 rounded-full bg-current opacity-30 shrink-0 flex items-center justify-center text-[7px] font-bold">
+                        {apt.profissional.nome.charAt(0)}
+                      </span>
+                    )}
+                    <span className="truncate">{apt.profissional.nome}</span>
+                  </div>
                   <div className="truncate opacity-60 leading-tight">{apt.sala.nome}</div>
                 </button>
               )

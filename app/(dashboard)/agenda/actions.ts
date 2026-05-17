@@ -43,7 +43,7 @@ export async function getAgendamentos({
   const agendamentos = await db.agendamento.findMany({
     where,
     include: {
-      profissional: { include: { user: { select: { name: true } } } },
+      profissional: { select: { id: true, fotoBase64: true, user: { select: { name: true } } } },
       paciente: { select: { id: true, nome: true, email: true, telefone: true } },
       sala: { select: { id: true, nome: true } },
     },
@@ -65,7 +65,7 @@ export async function getAgendamentos({
     bandeiraCartao: a.bandeiraCartao ?? null,
     numeroParcelas: a.numeroParcelas ?? null,
     confirmacaoEnviada: a.confirmacaoEnviada ?? false,
-    profissional: { id: a.profissionalId, nome: a.profissional.user.name },
+    profissional: { id: a.profissionalId, nome: a.profissional.user.name, foto: (a.profissional as any).fotoBase64 ?? null },
     paciente: { id: a.pacienteId, nome: a.paciente.nome, email: a.paciente.email ?? null, telefone: a.paciente.telefone ?? null },
     sala: { id: a.salaId, nome: a.sala.nome },
   }))
