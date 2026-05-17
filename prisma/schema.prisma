@@ -77,6 +77,7 @@ model Profissional {
   comissoes        Comissao[]
   alugueis         Aluguel[]
   transacoes       TransacaoFinanceira[]
+  despesas         DespesaProfissional[]
 
   @@index([slugAgendamento])
 }
@@ -204,6 +205,23 @@ model Comissao {
   dataPagamento  DateTime?
 
   @@index([profissionalId])
+}
+
+model DespesaProfissional {
+  id             String           @id @default(cuid())
+  profissionalId String
+  profissional   Profissional     @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
+  descricao      String
+  valor          Decimal          @db.Decimal(10, 2)
+  data           DateTime         @db.Date
+  categoria      String
+  status         StatusFinanceiro @default(PENDENTE)
+  observacao     String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([profissionalId])
+  @@index([data])
 }
 
 model Aluguel {

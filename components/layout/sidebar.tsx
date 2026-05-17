@@ -12,6 +12,7 @@ import {
   DollarSign,
   BarChart3,
   Settings,
+  Receipt,
 } from 'lucide-react'
 import type { DashboardUser } from './dashboard-shell'
 
@@ -51,6 +52,12 @@ const NAV_ITEMS = [
     label: 'Financeiro',
     icon: DollarSign,
     roles: ['ADMIN'],
+  },
+  {
+    href: '/meu-financeiro',
+    label: 'Minhas Despesas',
+    icon: Receipt,
+    roles: ['PROFISSIONAL'],
   },
   {
     href: '/relatorios',

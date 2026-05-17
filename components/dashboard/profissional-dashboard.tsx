@@ -12,6 +12,7 @@ import {
   AlertCircle,
   Clock,
   Wallet,
+  Receipt,
 } from 'lucide-react'
 
 const STATUS_COLORS: Record<string, string> = {
@@ -83,6 +84,14 @@ export async function ProfissionalDashboard({ profissionalId, nome }: Props) {
       icon: CalendarCheck,
       cor: 'text-blue-600',
       bg: 'bg-blue-50 dark:bg-blue-950/30',
+    },
+    {
+      titulo: 'Minhas despesas pendentes',
+      valor: formatBRL(d.despesasPropriasTotal),
+      sub: 'Despesas pessoais a pagar',
+      icon: Receipt,
+      cor: 'text-orange-600',
+      bg: 'bg-orange-50 dark:bg-orange-950/30',
     },
   ]
 

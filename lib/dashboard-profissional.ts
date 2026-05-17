@@ -13,6 +13,7 @@ export async function getDashboardProfissional(profissionalId: string) {
     aluguelPendente,
     consultasHoje,
     pacientesIds,
+    despesasPendentes,
   ] = await Promise.all([
     db.agendamento.findMany({
       where: {
@@ -50,6 +51,10 @@ export async function getDashboardProfissional(profissionalId: string) {
       select: { pacienteId: true, dataHoraInicio: true },
       distinct: ['pacienteId'],
     }),
+    db.despesaProfissional.aggregate({
+      where: { profissionalId, status: 'PENDENTE' },
+      _sum: { valor: true },
+    }),
   ])
 
   const realizados = agendamentosMes.filter(a => a.status === 'REALIZADO')
@@ -68,6 +73,8 @@ export async function getDashboardProfissional(profissionalId: string) {
     Number(comissoesPendentes._sum.valorComissao ?? 0) +
     Number(aluguelPendente._sum.valor ?? 0)
 
+  const despesasPropriasTotal = Number(despesasPendentes._sum.valor ?? 0)
+
   return {
     faturamentoMes,
     consultasMes,
@@ -77,6 +84,7 @@ export async function getDashboardProfissional(profissionalId: string) {
     pacientesInativos,
     pacientesTotal,
     valorDevidoPendente,
+    despesasPropriasTotal,
     consultasHoje: consultasHoje.map(a => ({
       id: a.id,
       paciente: a.paciente.nome,
