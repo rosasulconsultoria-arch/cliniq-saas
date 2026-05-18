@@ -8,5 +8,5 @@ export default async function TrocarSenhaPage() {
   if (!session?.user) redirect('/login')
   if (!session.user.mustChangePassword) redirect('/dashboard')
 
-  return <TrocarSenhaForm />
+  return <TrocarSenhaForm userName={session.user.name ?? ''} userEmail={session.user.email ?? ''} />
 }

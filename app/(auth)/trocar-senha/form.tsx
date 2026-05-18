@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
-export function TrocarSenhaForm() {
+export function TrocarSenhaForm({ userName, userEmail }: { userName: string; userEmail: string }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [novaSenha, setNovaSenha] = useState('')
@@ -42,6 +42,9 @@ export function TrocarSenhaForm() {
           <h1 className="text-2xl font-semibold tracking-tight">Defina sua senha</h1>
           <p className="text-sm text-muted-foreground">
             Este é seu primeiro acesso. Por segurança, crie uma senha pessoal para continuar.
+          </p>
+          <p className="text-xs text-muted-foreground bg-muted rounded-md px-3 py-1.5 inline-block">
+            Logado como <strong>{userName}</strong> ({userEmail})
           </p>
         </div>
 
