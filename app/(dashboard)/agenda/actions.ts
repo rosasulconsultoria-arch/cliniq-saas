@@ -31,9 +31,7 @@ export async function getAgendamentos({
     dataHoraInicio: { gte: new Date(inicio), lte: new Date(fim) },
   }
 
-  if (userRole === 'PROFISSIONAL' && userProfissionalId) {
-    where.profissionalId = userProfissionalId
-  } else if (profissionalId) {
+  if (profissionalId && profissionalId !== 'todos') {
     where.profissionalId = profissionalId
   }
 

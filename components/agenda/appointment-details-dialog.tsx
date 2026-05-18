@@ -20,6 +20,8 @@ interface Props {
   open: boolean
   onClose: () => void
   onSuccess: () => void
+  userRole?: string
+  userProfissionalId?: string
 }
 
 const STATUS_CONFIG: Record<string, { label: string; variant: string; className: string }> = {
@@ -38,7 +40,7 @@ const FORMA_LABELS: Record<string, string> = {
   CARTAO_DEBITO: 'Cartão de Débito',
 }
 
-export function AppointmentDetailsDialog({ agendamento, open, onClose, onSuccess }: Props) {
+export function AppointmentDetailsDialog({ agendamento, open, onClose, onSuccess, userRole, userProfissionalId }: Props) {
   const [isPending, startTransition] = useTransition()
   const [cancelarOpen, setCancelarOpen] = useState(false)
   const [whatsLink, setWhatsLink] = useState<string | null>(null)
@@ -50,6 +52,7 @@ export function AppointmentDetailsDialog({ agendamento, open, onClose, onSuccess
   const duracao = Math.round((fim.getTime() - inicio.getTime()) / 60_000)
   const cfg = STATUS_CONFIG[agendamento.status] ?? STATUS_CONFIG.AGENDADO
   const podeAlterar = !['CANCELADO', 'REALIZADO'].includes(agendamento.status)
+  const ehDono = userRole === 'ADMIN' || !userProfissionalId || agendamento.profissional.id === userProfissionalId
 
   const temEmail = !!agendamento.paciente.email
   const temWhats = !!agendamento.paciente.telefone
@@ -167,7 +170,7 @@ export function AppointmentDetailsDialog({ agendamento, open, onClose, onSuccess
               )}
             </div>
 
-            {podeAlterar && (
+            {podeAlterar && ehDono && (
               <>
                 <Separator />
                 <div className="space-y-2">

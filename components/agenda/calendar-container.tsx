@@ -219,6 +219,8 @@ export function CalendarContainer({ agendamentosInicial, profissionais, salas, u
         open={!!selectedAgendamento}
         onClose={() => setSelectedAgendamento(null)}
         onSuccess={handleSuccess}
+        userRole={userRole}
+        userProfissionalId={userProfissionalId}
       />
     </div>
   )
