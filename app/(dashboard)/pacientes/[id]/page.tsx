@@ -18,7 +18,7 @@ export default async function EditarPacientePage({ params }: Props) {
 
   const defaultValues = {
     nome: paciente.nome,
-    cpf: mascaraCPF(paciente.cpf),
+    cpf: paciente.cpf ? mascaraCPF(paciente.cpf) : '',
     telefone: paciente.telefone ? mascaraTelefone(paciente.telefone) : '',
     email: paciente.email ?? '',
     dataNascimento: paciente.dataNascimento

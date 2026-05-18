@@ -84,7 +84,7 @@ export default async function PacientesPage({ searchParams }: Props) {
               {dados.map((p) => (
                 <TableRow key={p.id}>
                   <TableCell className="font-medium">{p.nome}</TableCell>
-                  <TableCell className="text-muted-foreground font-mono text-sm">{formatarCPF(p.cpf)}</TableCell>
+                  <TableCell className="text-muted-foreground font-mono text-sm">{p.cpf ? formatarCPF(p.cpf) : '—'}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">{p.telefone ?? '—'}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">
                     {p.dataNascimento ? `${calcularIdade(p.dataNascimento)} anos` : '—'}
