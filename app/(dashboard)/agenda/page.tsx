@@ -21,7 +21,6 @@ export default async function AgendaPage() {
 
   const where: Record<string, unknown> = {
     dataHoraInicio: { gte: inicio, lte: fim },
-    ...(userProfissionalId ? { profissionalId: userProfissionalId } : {}),
   }
 
   const [agendamentos, profissionais, salas] = await Promise.all([
