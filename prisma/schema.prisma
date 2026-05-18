@@ -88,7 +88,7 @@ model Profissional {
 model Paciente {
   id             String    @id @default(cuid())
   nome           String
-  cpf            String    @unique
+  cpf            String?   @unique
   telefone       String?
   email          String?
   dataNascimento DateTime?

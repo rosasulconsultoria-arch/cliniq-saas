@@ -7,7 +7,7 @@ import {
   addDays, format, isToday,
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Calendar, LayoutGrid, RefreshCw } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar, LayoutGrid, RefreshCw, Plus } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -124,6 +124,11 @@ export function CalendarContainer({ agendamentosInicial, profissionais, salas, u
     <div className="flex flex-col h-[calc(100vh-8rem)] gap-0">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 pb-4">
+        <Button size="sm" onClick={() => { setNewDialogSlot(null); setNewDialogOpen(true) }}>
+          <Plus className="h-4 w-4 mr-1.5" />
+          Novo Agendamento
+        </Button>
+
         <div className="flex items-center gap-1">
           <Button variant="outline" size="icon" onClick={() => navigate('prev')}><ChevronLeft className="h-4 w-4" /></Button>
           <Button variant="outline" size="sm" onClick={() => navigate('today')}>Hoje</Button>

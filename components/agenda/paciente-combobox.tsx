@@ -1,22 +1,23 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { Check, ChevronsUpDown, Loader2 } from 'lucide-react'
+import { Check, ChevronsUpDown, Loader2, UserPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { buscarPacientes } from '@/app/(dashboard)/agenda/actions'
 import { cn } from '@/lib/utils'
 
-interface Paciente { id: string; nome: string; cpf: string }
+interface Paciente { id: string; nome: string; cpf: string | null }
 
 interface Props {
   value: string
   onChange: (value: string, nome: string) => void
+  onCadastrar?: (nome: string) => void
   placeholder?: string
 }
 
-export function PacienteCombobox({ value, onChange, placeholder = 'Buscar paciente...' }: Props) {
+export function PacienteCombobox({ value, onChange, onCadastrar, placeholder = 'Buscar paciente...' }: Props) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [resultados, setResultados] = useState<Paciente[]>([])
@@ -37,6 +38,10 @@ export function PacienteCombobox({ value, onChange, placeholder = 'Buscar pacien
     onChange(paciente.id, paciente.nome)
     setOpen(false)
     setQuery('')
+  }
+
+  function formatCpf(cpf: string) {
+    return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
   }
 
   return (
@@ -67,7 +72,19 @@ export function PacienteCombobox({ value, onChange, placeholder = 'Buscar pacien
             ) : query.length < 2 ? (
               <CommandEmpty>Digite pelo menos 2 caracteres</CommandEmpty>
             ) : resultados.length === 0 ? (
-              <CommandEmpty>Nenhum paciente encontrado</CommandEmpty>
+              <div className="py-2">
+                <p className="text-sm text-center text-muted-foreground px-4 py-1">Nenhum paciente encontrado</p>
+                {onCadastrar && (
+                  <button
+                    type="button"
+                    className="mt-1 w-full flex items-center justify-center gap-2 text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 py-2 px-3 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition-colors"
+                    onClick={() => { onCadastrar(query); setOpen(false) }}
+                  >
+                    <UserPlus className="h-4 w-4" />
+                    Cadastrar &ldquo;{query}&rdquo; como paciente
+                  </button>
+                )}
+              </div>
             ) : (
               <CommandGroup>
                 {resultados.map((p) => (
@@ -75,7 +92,9 @@ export function PacienteCombobox({ value, onChange, placeholder = 'Buscar pacien
                     <Check className={cn('mr-2 h-4 w-4', value === p.id ? 'opacity-100' : 'opacity-0')} />
                     <div>
                       <p className="text-sm font-medium">{p.nome}</p>
-                      <p className="text-xs text-muted-foreground">{p.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}</p>
+                      {p.cpf && (
+                        <p className="text-xs text-muted-foreground">{formatCpf(p.cpf)}</p>
+                      )}
                     </div>
                   </CommandItem>
                 ))}

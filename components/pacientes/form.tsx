@@ -79,7 +79,7 @@ export function PacienteForm({ defaultValues, isEdit = false, id }: Props) {
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="cpf">CPF *</Label>
+            <Label htmlFor="cpf">CPF</Label>
             <Controller
               control={control}
               name="cpf"
@@ -97,7 +97,7 @@ export function PacienteForm({ defaultValues, isEdit = false, id }: Props) {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="telefone">Telefone</Label>
+            <Label htmlFor="telefone">Telefone *</Label>
             <Controller
               control={control}
               name="telefone"

@@ -13,7 +13,7 @@ export async function criarPaciente(data: unknown): Promise<{ error?: string }> 
     await db.paciente.create({
       data: {
         ...rest,
-        cpf: cpf.replace(/\D/g, ''),
+        cpf: cpf ? cpf.replace(/\D/g, '') || null : null,
         email: email || null,
         telefone: telefone || null,
         dataNascimento: dataNascimento ? new Date(dataNascimento) : null,
@@ -37,7 +37,7 @@ export async function atualizarPaciente(id: string, data: unknown): Promise<{ er
       where: { id },
       data: {
         ...rest,
-        cpf: cpf.replace(/\D/g, ''),
+        cpf: cpf ? cpf.replace(/\D/g, '') || null : null,
         email: email || null,
         telefone: telefone || null,
         dataNascimento: dataNascimento ? new Date(dataNascimento) : null,
@@ -49,6 +49,22 @@ export async function atualizarPaciente(id: string, data: unknown): Promise<{ er
   } catch (e: any) {
     if (e?.code === 'P2002') return { error: 'CPF já cadastrado' }
     return { error: 'Erro ao atualizar paciente.' }
+  }
+}
+
+export async function criarPacienteRapido(
+  data: { nome: string; telefone: string }
+): Promise<{ id: string; nome: string; cpf: string | null } | { error: string }> {
+  if (!data.nome?.trim() || !data.telefone?.trim()) return { error: 'Nome e telefone são obrigatórios' }
+  try {
+    const paciente = await db.paciente.create({
+      data: { nome: data.nome.trim(), telefone: data.telefone.trim(), ativo: true },
+      select: { id: true, nome: true, cpf: true },
+    })
+    revalidatePath('/pacientes')
+    return { id: paciente.id, nome: paciente.nome, cpf: paciente.cpf }
+  } catch {
+    return { error: 'Erro ao cadastrar paciente.' }
   }
 }
 
