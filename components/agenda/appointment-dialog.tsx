@@ -43,7 +43,7 @@ interface SalaItem { id: string; nome: string }
 interface Props {
   open: boolean
   onClose: () => void
-  slot: { date: Date; time: string } | null
+  slot: { date: Date; time: string; salaId?: string } | null
   profissionais: ProfissionalItem[]
   salas: SalaItem[]
   userRole: string
@@ -107,8 +107,9 @@ export function AgendamentoDialog({ open, onClose, slot, profissionais, salas, u
     if (slot && open) {
       setSelectedDate(format(slot.date, 'yyyy-MM-dd'))
       setSelectedTime(slot.time)
+      if (slot.salaId) setValue('salaId', slot.salaId)
     }
-  }, [slot, open])
+  }, [slot, open, setValue])
 
   // Auto-fill valor from profissional
   const profissionalId = watch('profissionalId')

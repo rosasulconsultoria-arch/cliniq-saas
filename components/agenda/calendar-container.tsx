@@ -4,22 +4,23 @@ import { useState, useTransition, useCallback } from 'react'
 import {
   addWeeks, subWeeks, addMonths, subMonths,
   startOfWeek, endOfWeek, startOfMonth, endOfMonth,
-  addDays, format, isToday,
+  startOfDay, endOfDay, addDays, subDays, format, isToday,
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { ChevronLeft, ChevronRight, Calendar, LayoutGrid, RefreshCw, Plus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar, LayoutGrid, RefreshCw, Plus, Building2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { WeeklyView } from './weekly-view'
 import { MonthlyView } from './monthly-view'
+import { RoomGridView } from './room-grid-view'
 import { AgendamentoDialog } from './appointment-dialog'
 import { AppointmentDetailsDialog } from './appointment-details-dialog'
 import { getAgendamentos } from '@/app/(dashboard)/agenda/actions'
 import type { AgendamentoDisplay } from '@/types/agenda'
 
-type View = 'weekly' | 'monthly'
+type View = 'rooms' | 'weekly' | 'monthly'
 type Agendamento = AgendamentoDisplay
 
 interface ProfissionalItem { id: string; nome: string; valorConsultaPadrao: number | null; tipoVinculo: string }
@@ -48,7 +49,7 @@ function buildMonthGrid(date: Date): Date[][] {
 
 export function CalendarContainer({ agendamentosInicial, profissionais, salas, userRole, userProfissionalId }: Props) {
   const router = useRouter()
-  const [view, setView] = useState<View>('weekly')
+  const [view, setView] = useState<View>('rooms')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>(agendamentosInicial)
   const [profissionalFilter, setProfissionalFilter] = useState('')
@@ -58,7 +59,7 @@ export function CalendarContainer({ agendamentosInicial, profissionais, salas, u
 
   // Dialog state
   const [newDialogOpen, setNewDialogOpen] = useState(false)
-  const [newDialogSlot, setNewDialogSlot] = useState<{ date: Date; time: string } | null>(null)
+  const [newDialogSlot, setNewDialogSlot] = useState<{ date: Date; time: string; salaId?: string } | null>(null)
   const [selectedAgendamento, setSelectedAgendamento] = useState<Agendamento | null>(null)
 
   // Week days for weekly view
@@ -68,8 +69,8 @@ export function CalendarContainer({ agendamentosInicial, profissionais, salas, u
 
   const fetchData = useCallback((date: Date) => {
     startTransition(async () => {
-      const inicio = view === 'weekly' ? startOfWeek(date, { weekStartsOn: 1 }) : startOfMonth(date)
-      const fim = view === 'weekly' ? endOfWeek(date, { weekStartsOn: 1 }) : endOfMonth(date)
+      const inicio = view === 'weekly' ? startOfWeek(date, { weekStartsOn: 1 }) : view === 'monthly' ? startOfMonth(date) : startOfDay(date)
+      const fim = view === 'weekly' ? endOfWeek(date, { weekStartsOn: 1 }) : view === 'monthly' ? endOfMonth(date) : endOfDay(date)
       const data = await getAgendamentos({
         inicio: inicio.toISOString(),
         fim: fim.toISOString(),
@@ -89,15 +90,17 @@ export function CalendarContainer({ agendamentosInicial, profissionais, salas, u
       newDate = new Date()
     } else if (view === 'weekly') {
       newDate = direction === 'prev' ? subWeeks(currentDate, 1) : addWeeks(currentDate, 1)
-    } else {
+    } else if (view === 'monthly') {
       newDate = direction === 'prev' ? subMonths(currentDate, 1) : addMonths(currentDate, 1)
+    } else {
+      newDate = direction === 'prev' ? subDays(currentDate, 1) : addDays(currentDate, 1)
     }
     setCurrentDate(newDate)
     fetchData(newDate)
   }
 
-  function handleSlotClick(date: Date, time: string) {
-    setNewDialogSlot({ date, time })
+  function handleSlotClick(date: Date, time: string, salaId?: string) {
+    setNewDialogSlot({ date, time, salaId })
     setNewDialogOpen(true)
   }
 
@@ -118,7 +121,9 @@ export function CalendarContainer({ agendamentosInicial, profissionais, salas, u
 
   const periodLabel = view === 'weekly'
     ? `${format(weekDays[0], "d 'de' MMM", { locale: ptBR })} — ${format(weekDays[6], "d 'de' MMM", { locale: ptBR })}`
-    : format(currentDate, "MMMM 'de' yyyy", { locale: ptBR })
+    : view === 'monthly'
+    ? format(currentDate, "MMMM 'de' yyyy", { locale: ptBR })
+    : format(currentDate, "d 'de' MMM", { locale: ptBR })
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)] gap-0">
@@ -173,10 +178,13 @@ export function CalendarContainer({ agendamentosInicial, profissionais, salas, u
 
           {/* View toggle */}
           <div className="flex rounded-md border overflow-hidden">
-            <Button variant={view === 'weekly' ? 'default' : 'ghost'} size="sm" className="rounded-none h-8 px-2" onClick={() => setView('weekly')}>
+            <Button variant={view === 'rooms' ? 'default' : 'ghost'} size="sm" className="rounded-none h-8 px-2" onClick={() => setView('rooms')} title="Visão por salas">
+              <Building2 className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant={view === 'weekly' ? 'default' : 'ghost'} size="sm" className="rounded-none h-8 px-2" onClick={() => setView('weekly')} title="Visão semanal">
               <LayoutGrid className="h-3.5 w-3.5" />
             </Button>
-            <Button variant={view === 'monthly' ? 'default' : 'ghost'} size="sm" className="rounded-none h-8 px-2" onClick={() => setView('monthly')}>
+            <Button variant={view === 'monthly' ? 'default' : 'ghost'} size="sm" className="rounded-none h-8 px-2" onClick={() => setView('monthly')} title="Visão mensal">
               <Calendar className="h-3.5 w-3.5" />
             </Button>
           </div>
@@ -185,7 +193,15 @@ export function CalendarContainer({ agendamentosInicial, profissionais, salas, u
 
       {/* Calendar area */}
       <div className="flex-1 rounded-lg border bg-card overflow-hidden flex flex-col">
-        {view === 'weekly' ? (
+        {view === 'rooms' ? (
+          <RoomGridView
+            agendamentos={agendamentos}
+            salas={salas}
+            currentDate={currentDate}
+            onSlotClick={handleSlotClick}
+            onAppointmentClick={handleAppointmentClick}
+          />
+        ) : view === 'weekly' ? (
           <WeeklyView
             agendamentos={agendamentos}
             weekDays={weekDays}
