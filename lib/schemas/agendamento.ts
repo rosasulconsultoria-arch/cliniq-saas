@@ -15,6 +15,8 @@ export const AgendamentoSchema = z.object({
   taxaCartaoPerc: z.coerce.number().min(0).max(20).optional().nullable(),
   origem: z.enum(['PUBLICO', 'INTERNO']).default('INTERNO'),
   observacoes: z.string().optional(),
+  recorrente: z.boolean().default(false),
+  totalRecorrencias: z.coerce.number().int().min(2).max(52).optional().nullable(),
 })
 
 export type AgendamentoFormData = z.infer<typeof AgendamentoSchema>

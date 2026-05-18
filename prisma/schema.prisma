@@ -155,10 +155,11 @@ model Agendamento {
   bandeiraCartao    String?
   numeroParcelas    Int?              @default(1)
   taxaCartaoPerc    Decimal?          @db.Decimal(5, 2)
-  confirmacaoEnviada Boolean         @default(false)
-  lembreteEnviado   Boolean          @default(false)
-  origem            OrigemAgendamento @default(INTERNO)
-  observacoes       String?
+  confirmacaoEnviada  Boolean           @default(false)
+  lembreteEnviado     Boolean           @default(false)
+  origem              OrigemAgendamento @default(INTERNO)
+  observacoes         String?
+  recorrenciaGrupoId  String?
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
@@ -168,6 +169,7 @@ model Agendamento {
 
   @@index([dataHoraInicio])
   @@index([profissionalId])
+  @@index([recorrenciaGrupoId])
   @@index([pacienteId])
   @@index([salaId])
 }

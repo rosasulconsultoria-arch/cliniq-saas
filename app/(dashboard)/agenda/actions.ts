@@ -3,7 +3,8 @@
 import { db } from '@/lib/db'
 import { revalidatePath } from 'next/cache'
 import { AgendamentoSchema } from '@/lib/schemas/agendamento'
-import { startOfWeek, endOfWeek, addMonths } from 'date-fns'
+import { startOfWeek, endOfWeek, addMonths, format } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import { enviarConfirmacaoEmail, gerarLinkWhatsApp } from '@/lib/notificacoes'
 
 // ──────────────────────────────────────────────
@@ -89,30 +90,67 @@ export async function buscarPacientes(query: string) {
 // Mutations
 // ──────────────────────────────────────────────
 
-export async function criarAgendamento(data: unknown): Promise<{ error?: string }> {
+export async function criarAgendamento(data: unknown): Promise<{ error?: string; whatsappLink?: string; count?: number }> {
   const parsed = AgendamentoSchema.safeParse(data)
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Dados inválidos' }
 
-  const { dataHoraInicio, duracao, ...rest } = parsed.data
+  const { dataHoraInicio, duracao, recorrente, totalRecorrencias, ...rest } = parsed.data
   const inicio = new Date(dataHoraInicio)
   const fim = new Date(inicio.getTime() + duracao * 60_000)
 
-  const conflito = (where: Record<string, unknown>) =>
+  const conflito = (where: Record<string, unknown>, dtInicio: Date, dtFim: Date) =>
     db.agendamento.findFirst({
       where: {
         ...where,
         status: { notIn: ['CANCELADO'] },
         OR: [
-          { dataHoraInicio: { gte: inicio, lt: fim } },
-          { dataHoraFim: { gt: inicio, lte: fim } },
-          { AND: [{ dataHoraInicio: { lte: inicio } }, { dataHoraFim: { gte: fim } }] },
+          { dataHoraInicio: { gte: dtInicio, lt: dtFim } },
+          { dataHoraFim: { gt: dtInicio, lte: dtFim } },
+          { AND: [{ dataHoraInicio: { lte: dtInicio } }, { dataHoraFim: { gte: dtFim } }] },
         ],
       },
     })
 
+  // ── Agendamento recorrente ──────────────────────────────────────────────────
+  if (recorrente && totalRecorrencias && totalRecorrencias >= 2) {
+    const ocorrencias = Array.from({ length: totalRecorrencias }, (_, i) => {
+      const dtInicio = new Date(inicio.getTime() + i * 7 * 24 * 60 * 60 * 1000)
+      const dtFim = new Date(dtInicio.getTime() + duracao * 60_000)
+      return { dtInicio, dtFim }
+    })
+
+    for (const { dtInicio, dtFim } of ocorrencias) {
+      const [cp, cs] = await Promise.all([
+        conflito({ profissionalId: rest.profissionalId }, dtInicio, dtFim),
+        conflito({ salaId: rest.salaId }, dtInicio, dtFim),
+      ])
+      const dataLabel = format(dtInicio, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+      if (cp) return { error: `Conflito de horário do profissional em ${dataLabel}` }
+      if (cs) return { error: `Sala ocupada em ${dataLabel}` }
+    }
+
+    const grupoId = crypto.randomUUID()
+    try {
+      await db.agendamento.createMany({
+        data: ocorrencias.map(({ dtInicio, dtFim }) => ({
+          ...rest,
+          dataHoraInicio: dtInicio,
+          dataHoraFim: dtFim,
+          status: 'AGENDADO',
+          recorrenciaGrupoId: grupoId,
+        })),
+      })
+      revalidatePath('/agenda')
+      return { count: totalRecorrencias }
+    } catch {
+      return { error: 'Erro ao criar agendamentos recorrentes.' }
+    }
+  }
+
+  // ── Agendamento único ───────────────────────────────────────────────────────
   const [conflitoProfissional, conflitoSala] = await Promise.all([
-    conflito({ profissionalId: rest.profissionalId }),
-    conflito({ salaId: rest.salaId }),
+    conflito({ profissionalId: rest.profissionalId }, inicio, fim),
+    conflito({ salaId: rest.salaId }, inicio, fim),
   ])
 
   if (conflitoProfissional) return { error: 'Profissional já tem agendamento nesse horário' }

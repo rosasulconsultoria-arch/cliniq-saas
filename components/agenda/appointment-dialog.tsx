@@ -3,9 +3,10 @@
 import { useEffect, useTransition, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { format } from 'date-fns'
+import { format, parseISO } from 'date-fns'
+import { ptBR } from 'date-fns/locale'
 import { toast } from 'sonner'
-import { Loader2, UserPlus, X } from 'lucide-react'
+import { Loader2, UserPlus, X, RefreshCw } from 'lucide-react'
 import { AgendamentoSchema, type AgendamentoFormData } from '@/lib/schemas/agendamento'
 import { criarAgendamento } from '@/app/(dashboard)/agenda/actions'
 import { criarPacienteRapido } from '@/app/(dashboard)/pacientes/actions'
@@ -17,6 +18,8 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Switch } from '@/components/ui/switch'
+import { Separator } from '@/components/ui/separator'
 
 const TIME_OPTIONS = Array.from({ length: 24 }, (_, i) => {
   const totalMin = 8 * 60 + i * 30
@@ -75,12 +78,16 @@ export function AgendamentoDialog({ open, onClose, slot, profissionais, salas, u
       pacienteId: '',
       salaId: '',
       dataHoraInicio: '',
+      recorrente: false,
+      totalRecorrencias: 4,
     },
   })
 
   const { watch, setValue, control, register, handleSubmit, reset, formState: { errors } } = form
   const tipoCobranca = watch('tipoCobranca')
   const formaPagamento = watch('formaPagamento')
+  const recorrente = watch('recorrente')
+  const totalRecorrencias = watch('totalRecorrencias')
   const isCartao = formaPagamento === 'CARTAO_CREDITO' || formaPagamento === 'CARTAO_DEBITO'
   const isCredito = formaPagamento === 'CARTAO_CREDITO'
 
@@ -143,6 +150,10 @@ export function AgendamentoDialog({ open, onClose, slot, profissionais, salas, u
     startTransition(async () => {
       const result = await criarAgendamento(data)
       if (result?.error) { toast.error(result.error); return }
+      if ((result as any).count) {
+        toast.success(`${(result as any).count} agendamentos recorrentes criados!`)
+        onClose(); onSuccess(); return
+      }
       toast.success('Agendamento criado!')
       if ((result as any).whatsappLink) {
         toast('Enviar confirmação por WhatsApp?', {
@@ -309,7 +320,58 @@ export function AgendamentoDialog({ open, onClose, slot, profissionais, salas, u
             </div>
           </div>
 
-          {/* 5. Tipo de cobrança */}
+          {/* 5. Recorrência */}
+          <Separator />
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Agendamento recorrente</p>
+                <p className="text-xs text-muted-foreground">Repete toda semana no mesmo dia e horário</p>
+              </div>
+              <Controller
+                control={control}
+                name="recorrente"
+                render={({ field }) => (
+                  <Switch checked={field.value} onCheckedChange={field.onChange} />
+                )}
+              />
+            </div>
+
+            {recorrente && (
+              <div className="space-y-3 pl-3 border-l-2 border-indigo-200">
+                <div className="space-y-1.5">
+                  <Label>Número de sessões</Label>
+                  <div className="flex items-center gap-3">
+                    <Input
+                      type="number"
+                      min={2}
+                      max={52}
+                      className="w-24"
+                      {...register('totalRecorrencias', { valueAsNumber: true })}
+                    />
+                    <span className="text-sm text-muted-foreground">sessões (máx. 52)</span>
+                  </div>
+                </div>
+                {selectedDate && selectedTime && totalRecorrencias >= 2 && (
+                  <div className="flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/30 rounded-md px-3 py-2">
+                    <RefreshCw className="h-4 w-4 shrink-0" />
+                    <span>
+                      {totalRecorrencias} sessões toda{' '}
+                      <strong>
+                        {format(parseISO(selectedDate), 'EEEE', { locale: ptBR })}
+                      </strong>{' '}
+                      às <strong>{selectedTime}</strong> — de{' '}
+                      {format(parseISO(selectedDate), 'dd/MM/yyyy')} até{' '}
+                      {format(new Date(parseISO(selectedDate).getTime() + (totalRecorrencias - 1) * 7 * 24 * 60 * 60 * 1000), 'dd/MM/yyyy')}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          <Separator />
+
+          {/* 6. Tipo de cobrança */}
           <div className="space-y-1.5">
             <Label>Tipo de cobrança</Label>
             <Controller
