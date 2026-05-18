@@ -14,6 +14,8 @@ const NAV = [
   { href: '/financeiro/comissoes', label: 'Comissões' },
   { href: '/financeiro/alugueis', label: 'Aluguéis' },
   { href: '/financeiro/categorias', label: 'Categorias' },
+  { href: '/financeiro/dre', label: 'DRE' },
+  { href: '/financeiro/taxas', label: 'Taxas e Impostos' },
 ]
 
 export function FinanceiroNav() {
