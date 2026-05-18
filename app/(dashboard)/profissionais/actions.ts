@@ -26,7 +26,7 @@ export async function criarProfissional(data: unknown): Promise<{ error?: string
     const hash = await bcrypt.hash(senha, 12)
     await db.$transaction(async (tx) => {
       const user = await tx.user.create({
-        data: { name: nome, email, passwordHash: hash, role: 'PROFISSIONAL', active: true },
+        data: { name: nome, email, passwordHash: hash, role: 'PROFISSIONAL', active: true, mustChangePassword: true },
       })
       const prof = await tx.profissional.create({
         data: {

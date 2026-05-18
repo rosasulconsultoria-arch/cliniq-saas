@@ -10,6 +10,7 @@ export const authConfig: NextAuthConfig = {
       if (user) {
         token.id = user.id as string
         token.role = (user as any).role
+        token.mustChangePassword = (user as any).mustChangePassword ?? false
       }
       return token
     },
@@ -17,6 +18,7 @@ export const authConfig: NextAuthConfig = {
       if (session.user) {
         session.user.id = token.id as string
         session.user.role = token.role as string
+        session.user.mustChangePassword = token.mustChangePassword ?? false
       }
       return session
     },

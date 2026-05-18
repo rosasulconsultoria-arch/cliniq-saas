@@ -14,6 +14,10 @@ export default async function DashboardLayout({
     redirect('/login')
   }
 
+  if (session.user.mustChangePassword) {
+    redirect('/trocar-senha')
+  }
+
   const config = await db.configClinica.findUnique({ where: { id: 'default' } })
 
   return (
