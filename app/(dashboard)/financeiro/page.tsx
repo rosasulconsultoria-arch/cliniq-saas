@@ -35,8 +35,8 @@ export default async function FinanceiroPage({ searchParams }: Props) {
     db.transacaoFinanceira.aggregate({ where: { tipo: 'RECEITA', data: { gte: inicio, lte: fim }, status: 'PAGO' }, _sum: { valor: true } }),
     db.transacaoFinanceira.aggregate({ where: { tipo: 'DESPESA', data: { gte: inicio, lte: fim }, status: 'PAGO' }, _sum: { valor: true } }),
     db.transacaoFinanceira.aggregate({ where: { tipo: 'INVESTIMENTO', data: { gte: inicio, lte: fim }, status: 'PAGO' }, _sum: { valor: true } }),
-    db.comissao.aggregate({ where: { status: 'PENDENTE' }, _sum: { valorComissao: true } }),
-    db.aluguel.aggregate({ where: { status: 'PENDENTE' }, _sum: { valor: true } }),
+    db.comissao.aggregate({ where: { status: 'PENDENTE', agendamento: { dataHoraInicio: { gte: inicio, lte: fim } } }, _sum: { valorComissao: true } }),
+    db.aluguel.aggregate({ where: { status: 'PENDENTE', mesReferencia: { gte: inicio, lte: fim } }, _sum: { valor: true } }),
     db.transacaoFinanceira.findMany({
       where: { tipo: 'RECEITA', data: { gte: inicio, lte: fim }, status: 'PAGO' },
       select: { descricao: true, valor: true },

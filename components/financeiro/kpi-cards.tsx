@@ -47,18 +47,18 @@ export function KPICards(props: Props) {
       tooltip: `Receita menos Despesas no período (${p}). Representa o resultado financeiro líquido da clínica.`,
     },
     {
-      titulo: 'Comissões a Receber',
+      titulo: `Comissões a Receber — ${p}`,
       valor: props.comissoesPendentes,
       icone: AlertCircle,
       cor: 'text-amber-500',
-      tooltip: 'Total de comissões que os profissionais comissionados ainda devem repassar à clínica pelos atendimentos já realizados. Acumula todos os meses em aberto.',
+      tooltip: `Comissões pendentes cujos atendimentos ocorreram no período (${p}) e ainda não foram repassadas à clínica pelos profissionais comissionados.`,
     },
     {
-      titulo: 'Aluguéis Pendentes',
+      titulo: `Aluguéis Pendentes — ${p}`,
       valor: props.alugueisPendentes,
       icone: Home,
       cor: 'text-blue-500',
-      tooltip: 'Total de aluguéis mensais de profissionais locatários que ainda não foram recebidos. Acumula todos os meses em aberto.',
+      tooltip: `Aluguéis com mês de referência dentro do período (${p}) que ainda não foram recebidos dos profissionais locatários.`,
     },
     {
       titulo: `Investimentos — ${p}`,
