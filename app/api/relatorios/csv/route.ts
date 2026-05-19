@@ -27,78 +27,87 @@ export async function GET(req: Request) {
   let filename = tipo
 
   try {
+    const sep = (v: number) => v.toFixed(2).replace('.', ',')
+    const row = (...cols: (string | number)[]) => cols.map(c => typeof c === 'string' && c.includes(';') ? `"${c}"` : c).join(';')
+
     switch (tipo) {
       case 'faturamento': {
         const dados = await getFaturamentoPorPeriodo(inicio, fim)
-        const header = 'Data,Descrição,Categoria,Forma Pagamento,Valor,Status'
-        const rows = dados.map(d => [
-          format(d.data, 'dd/MM/yyyy'),
-          `"${d.descricao}"`,
-          d.categoria.nome,
-          d.formaPagamento ?? '',
-          d.valor.toFixed(2),
-          d.status,
-        ].join(','))
-        csv = [header, ...rows].join('\n')
+        csv = [
+          row('Data', 'Descrição', 'Categoria', 'Forma Pagamento', 'Valor', 'Status'),
+          ...dados.map(d => row(
+            format(d.data, 'dd/MM/yyyy'),
+            d.descricao,
+            d.categoria.nome,
+            d.formaPagamento ?? '',
+            sep(d.valor),
+            d.status,
+          )),
+        ].join('\n')
         break
       }
       case 'por-profissional': {
         const dados = await getFaturamentoPorProfissional(inicio, fim)
-        csv = ['Profissional,Consultas,Faturamento',
-          ...dados.map(d => [`"${d.profissional}"`, d.consultas, d.faturamento.toFixed(2)].join(','))
+        csv = [
+          row('Profissional', 'Consultas', 'Faturamento'),
+          ...dados.map(d => row(d.profissional, d.consultas, sep(d.faturamento))),
         ].join('\n')
         break
       }
       case 'por-sala': {
         const dados = await getFaturamentoPorSala(inicio, fim)
-        csv = ['Sala,Consultas,Faturamento',
-          ...dados.map(d => [`"${d.sala}"`, d.consultas, d.faturamento.toFixed(2)].join(','))
+        csv = [
+          row('Sala', 'Consultas', 'Faturamento'),
+          ...dados.map(d => row(d.sala, d.consultas, sep(d.faturamento))),
         ].join('\n')
         break
       }
       case 'despesas-categoria': {
         const dados = await getDespesasPorCategoria(inicio, fim)
-        csv = ['Categoria,Total,Pago,Pendente',
-          ...dados.map(d => [`"${d.nome}"`, d.total.toFixed(2), d.pago.toFixed(2), d.pendente.toFixed(2)].join(','))
+        csv = [
+          row('Categoria', 'Total', 'Pago', 'Pendente'),
+          ...dados.map(d => row(d.nome, sep(d.total), sep(d.pago), sep(d.pendente))),
         ].join('\n')
         break
       }
       case 'dre': {
         const d = await getDRE(inicio, fim)
         csv = [
-          'Item,Valor',
-          `Receitas,${d.receitas.toFixed(2)}`,
-          `Despesas Operacionais,-${d.despesas.toFixed(2)}`,
-          `Comissões Pagas,-${d.totalComissoes.toFixed(2)}`,
-          `Receita de Aluguéis,${d.totalAlugueis.toFixed(2)}`,
-          `Investimentos,-${d.investimentos.toFixed(2)}`,
-          `Lucro Líquido,${d.lucro.toFixed(2)}`,
+          row('Item', 'Valor'),
+          row('Receitas Operacionais', sep(d.receitas)),
+          row('Despesas Operacionais', sep(-d.despesas)),
+          row('Comissões Pagas', sep(-d.totalComissoes)),
+          row('Receita de Aluguéis', sep(d.totalAlugueis)),
+          row('Investimentos', sep(-d.investimentos)),
+          row('Lucro Líquido', sep(d.lucro)),
         ].join('\n')
         break
       }
       case 'comissoes': {
         const dados = await getComissoesPorProfissional(inicio, fim)
-        csv = ['Profissional,Consultas,Total Comissão,Pago,Pendente',
-          ...dados.map(d => [`"${d.nome}"`, d.count, d.total.toFixed(2), d.pago.toFixed(2), d.pendente.toFixed(2)].join(','))
+        csv = [
+          row('Profissional', 'Consultas', 'Total Comissão', 'Pago', 'Pendente'),
+          ...dados.map(d => row(d.nome, d.count, sep(d.total), sep(d.pago), sep(d.pendente))),
         ].join('\n')
         break
       }
       case 'ocupacao': {
         const dados = await getOcupacaoPorSala(inicio, fim)
-        csv = ['Sala,Agendamentos,Realizados,Slots Disponíveis,Taxa (%)',
-          ...dados.map(d => [`"${d.sala}"`, d.agendado, d.realizado, d.slotsTotal, d.taxa.toFixed(1)].join(','))
+        csv = [
+          row('Sala', 'Agendamentos', 'Realizados', 'Slots Disponíveis', 'Taxa (%)'),
+          ...dados.map(d => row(d.sala, d.agendado, d.realizado, d.slotsTotal, d.taxa.toFixed(1).replace('.', ','))),
         ].join('\n')
         break
       }
       case 'pacientes': {
         const d = await getPacientesAtivos()
         csv = [
-          'Métrica,Valor',
-          `Total de Cadastros,${d.totalCadastros}`,
-          `Cadastros Ativos,${d.ativos}`,
-          `Cadastros Inativos,${d.inativos}`,
-          `Com consulta nos últimos 90 dias,${d.ativosRecentes}`,
-          `Sem consulta há mais de 90 dias,${d.inativosLongos}`,
+          row('Métrica', 'Valor'),
+          row('Total de Cadastros', d.totalCadastros),
+          row('Cadastros Ativos', d.ativos),
+          row('Cadastros Inativos', d.inativos),
+          row('Com consulta nos últimos 90 dias', d.ativosRecentes),
+          row('Sem consulta há mais de 90 dias', d.inativosLongos),
         ].join('\n')
         break
       }
@@ -111,7 +120,7 @@ export async function GET(req: Request) {
   }
 
   const bom = '﻿'
-  return new Response(bom + csv, {
+  return new Response(bom + 'sep=;\n' + csv, {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
       'Content-Disposition': `attachment; filename="${filename}.csv"`,
