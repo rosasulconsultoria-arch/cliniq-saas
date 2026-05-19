@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { CalendarClock, Handshake, Building2, Receipt, CreditCard } from 'lucide-react'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
 
 export default async function ContasAReceberPage() {
   const d = await getContasAReceber()
@@ -20,12 +21,12 @@ export default async function ContasAReceberPage() {
   }
 
   const cards = [
-    { titulo: 'Total a Receber', valor: d.totalGeral, cor: 'text-indigo-600' },
-    { titulo: 'Atendimentos Futuros', valor: d.totalAtendimentos, cor: 'text-blue-600' },
-    { titulo: 'Comissões Pendentes', valor: d.totalComissoes, cor: 'text-amber-600' },
-    { titulo: 'Aluguéis Pendentes', valor: d.totalAlugueis, cor: 'text-orange-600' },
-    { titulo: 'Parcelas Cartão', valor: d.totalParcelas, cor: 'text-purple-600' },
-    { titulo: 'Outras Receitas', valor: d.totalReceitas, cor: 'text-emerald-600' },
+    { titulo: 'Total a Receber', valor: d.totalGeral, cor: 'text-indigo-600', tooltip: 'Soma de todos os valores pendentes: atendimentos futuros, comissões, aluguéis, parcelas de cartão e outras receitas ainda não recebidas.' },
+    { titulo: 'Atendimentos Futuros', valor: d.totalAtendimentos, cor: 'text-blue-600', tooltip: 'Valor total dos agendamentos com status Agendado ou Confirmado. O pagamento ainda não foi recebido pois a consulta não foi realizada.' },
+    { titulo: 'Comissões Pendentes', valor: d.totalComissoes, cor: 'text-amber-600', tooltip: 'Comissões devidas aos profissionais comissionados por consultas já realizadas que ainda aguardam pagamento pela clínica.' },
+    { titulo: 'Aluguéis Pendentes', valor: d.totalAlugueis, cor: 'text-orange-600', tooltip: 'Mensalidades de aluguel de sala em aberto de profissionais locatários, acumuladas de todos os meses não quitados.' },
+    { titulo: 'Parcelas Cartão', valor: d.totalParcelas, cor: 'text-purple-600', tooltip: 'Parcelas de cartão de crédito cadastradas nos parcelamentos que ainda não foram liquidadas ou não venceram.' },
+    { titulo: 'Outras Receitas', valor: d.totalReceitas, cor: 'text-emerald-600', tooltip: 'Receitas avulsas cadastradas manualmente no Financeiro com status Pendente — ainda não recebidas.' },
   ]
 
   return (
@@ -35,8 +36,11 @@ export default async function ContasAReceberPage() {
         {cards.map(c => (
           <Card key={c.titulo} className="shadow-sm">
             <CardContent className="pt-4 pb-4">
-              <p className="text-xs text-muted-foreground">{c.titulo}</p>
-              <p className={`text-xl font-bold mt-1 ${c.cor}`}>{formatBRL(c.valor)}</p>
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-xs text-muted-foreground">{c.titulo}</p>
+                <InfoTooltip text={c.tooltip} />
+              </div>
+              <p className={`text-xl font-bold ${c.cor}`}>{formatBRL(c.valor)}</p>
             </CardContent>
           </Card>
         ))}

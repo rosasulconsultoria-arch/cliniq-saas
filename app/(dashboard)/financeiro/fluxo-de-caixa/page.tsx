@@ -10,6 +10,7 @@ import { Suspense } from 'react'
 import { PeriodoRelatorio } from '@/components/relatorios/periodo-relatorio'
 import { FluxoCaixaChart } from '@/components/financeiro/fluxo-caixa-chart'
 import { TrendingUp, TrendingDown, Wallet, ArrowRightLeft } from 'lucide-react'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
 
 interface Props { searchParams: Record<string, string | string[] | undefined> }
 
@@ -19,10 +20,10 @@ export default async function FluxoCaixaPage({ searchParams }: Props) {
   const d = await getFluxoCaixa(inicio, fim)
 
   const cards = [
-    { titulo: 'Saldo Inicial', valor: d.saldoInicial, icon: Wallet, cor: 'text-slate-600' },
-    { titulo: 'Total de Entradas', valor: d.totalEntradas, icon: TrendingUp, cor: 'text-emerald-600' },
-    { titulo: 'Total de Saídas', valor: d.totalSaidas, icon: TrendingDown, cor: 'text-red-500' },
-    { titulo: 'Saldo Final', valor: d.saldoFinal, icon: ArrowRightLeft, cor: d.saldoFinal >= 0 ? 'text-emerald-600' : 'text-red-500' },
+    { titulo: 'Saldo Inicial', valor: d.saldoInicial, icon: Wallet, cor: 'text-slate-600', tooltip: 'Saldo acumulado até o início do período selecionado — soma de todas as receitas pagas menos despesas pagas antes dessa data.' },
+    { titulo: 'Total de Entradas', valor: d.totalEntradas, icon: TrendingUp, cor: 'text-emerald-600', tooltip: 'Soma de todas as receitas com status Pago no período: consultas realizadas, aluguéis recebidos e outras receitas.' },
+    { titulo: 'Total de Saídas', valor: d.totalSaidas, icon: TrendingDown, cor: 'text-red-500', tooltip: 'Soma de todas as despesas e investimentos com status Pago no período selecionado.' },
+    { titulo: 'Saldo Final', valor: d.saldoFinal, icon: ArrowRightLeft, cor: d.saldoFinal >= 0 ? 'text-emerald-600' : 'text-red-500', tooltip: 'Saldo Inicial + Total de Entradas − Total de Saídas. Representa a posição financeira real ao final do período.' },
   ]
 
   return (
@@ -38,13 +39,14 @@ export default async function FluxoCaixaPage({ searchParams }: Props) {
           return (
             <Card key={c.titulo} className="shadow-sm">
               <CardContent className="pt-4 pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-muted-foreground">{c.titulo}</p>
-                    <p className={`text-xl font-bold mt-1 ${c.cor}`}>{formatBRL(c.valor)}</p>
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs text-muted-foreground">{c.titulo}</p>
+                  <div className="flex items-center gap-1.5">
+                    <InfoTooltip text={c.tooltip} />
+                    <Icon className={`h-4 w-4 ${c.cor} opacity-70`} />
                   </div>
-                  <Icon className={`h-5 w-5 ${c.cor} opacity-70`} />
                 </div>
+                <p className={`text-xl font-bold ${c.cor}`}>{formatBRL(c.valor)}</p>
               </CardContent>
             </Card>
           )
