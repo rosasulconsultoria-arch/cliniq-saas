@@ -173,4 +173,3 @@ export async function enviarEmailCrm(destinatarios: {
   return { enviados, erros }
 }
 
-export { personalizarMensagem } from '@/lib/crm-utils'
