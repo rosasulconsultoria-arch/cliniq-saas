@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { PacienteForm } from '@/components/clientes/form'
+import { PacienteForm } from '@/components/pacientes/form'
 
 export default function NovoPacientePage() {
   return (
