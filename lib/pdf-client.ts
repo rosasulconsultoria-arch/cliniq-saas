@@ -160,23 +160,27 @@ export async function downloadReciboPDF(agendamentoId: string): Promise<void> {
   doc.line(10, y, W - 10, y)
   y += 14
 
-  // ── Assinaturas
-  const sigX1 = 25, sigX2 = W - 55, sigW = 60
+  // ── Assinaturas (duas colunas simétricas dentro das margens)
+  const margin = 10
+  const sigW = 70
+  const col1Center = margin + sigW / 2          // ~45mm
+  const col2Center = W - margin - sigW / 2      // ~165mm
+
   doc.setDrawColor(120, 120, 120)
   doc.setLineWidth(0.3)
-  doc.line(sigX1, y, sigX1 + sigW, y)
-  doc.line(sigX2, y, sigX2 + sigW, y)
+  doc.line(margin, y, margin + sigW, y)
+  doc.line(W - margin - sigW, y, W - margin, y)
 
   y += 4
   doc.setTextColor(100, 100, 100)
   doc.setFontSize(8)
   doc.setFont('helvetica', 'normal')
-  doc.text(d.pacienteNome, sigX1 + sigW / 2, y, { align: 'center' })
-  doc.text(d.profissionalNome, sigX2 + sigW / 2, y, { align: 'center' })
+  doc.text(d.pacienteNome, col1Center, y, { align: 'center' })
+  doc.text(d.profissionalNome, col2Center, y, { align: 'center' })
   y += 4
   doc.setFontSize(7)
-  doc.text('Assinatura do Paciente', sigX1 + sigW / 2, y, { align: 'center' })
-  doc.text('Assinatura do Profissional', sigX2 + sigW / 2, y, { align: 'center' })
+  doc.text('Assinatura do Paciente', col1Center, y, { align: 'center' })
+  doc.text('Assinatura do Profissional', col2Center, y, { align: 'center' })
 
   // ── Rodapé
   const pageH = doc.internal.pageSize.getHeight()
