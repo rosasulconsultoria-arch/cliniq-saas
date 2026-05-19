@@ -19,6 +19,9 @@ export const PacienteSchema = z.object({
   email: z.string().email('Email inválido').optional().or(z.literal('')),
   dataNascimento: z.string().optional(),
   genero: z.string().optional(),
+  bairro: z.string().optional(),
+  cidade: z.string().optional(),
+  estado: z.string().optional(),
   observacoes: z.string().optional(),
   ativo: z.boolean().default(true),
 })

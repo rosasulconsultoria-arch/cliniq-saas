@@ -155,6 +155,23 @@ export function PacienteForm({ defaultValues, isEdit = false, id }: Props) {
           </div>
         </div>
 
+        {/* Localização */}
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="sm:col-span-1 space-y-1.5">
+            <Label htmlFor="bairro">Bairro</Label>
+            <Input id="bairro" placeholder="Centro" {...register('bairro')} />
+          </div>
+          <div className="sm:col-span-1 space-y-1.5">
+            <Label htmlFor="cidade">Cidade</Label>
+            <Input id="cidade" placeholder="São Paulo" {...register('cidade')} />
+          </div>
+          <div className="sm:col-span-1 space-y-1.5">
+            <Label htmlFor="estado">Estado</Label>
+            <Input id="estado" placeholder="SP" maxLength={2}
+              {...register('estado', { onChange: e => e.target.value = e.target.value.toUpperCase() })} />
+          </div>
+        </div>
+
         <div className="space-y-1.5">
           <Label htmlFor="observacoes">Observações</Label>
           <Textarea id="observacoes" placeholder="Informações relevantes sobre o paciente..." rows={4} {...register('observacoes')} />
