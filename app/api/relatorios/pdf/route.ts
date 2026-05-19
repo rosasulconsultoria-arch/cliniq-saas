@@ -12,6 +12,7 @@ import { ptBR } from 'date-fns/locale'
 import { RelatorioPDF } from '@/components/pdf/relatorio-pdf'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 30
 
 const LABELS: Record<string, string> = {
   faturamento: 'Faturamento por Período',

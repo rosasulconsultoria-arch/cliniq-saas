@@ -7,6 +7,7 @@ import { ptBR } from 'date-fns/locale'
 import { ReceiboPDF, type ReciboData } from '@/components/pdf/recibo-pdf'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 30
 
 const FORMA: Record<string, string> = {
   DINHEIRO: 'Dinheiro',
