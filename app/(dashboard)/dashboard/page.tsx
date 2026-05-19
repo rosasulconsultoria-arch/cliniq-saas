@@ -28,6 +28,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatBRL } from '@/lib/utils'
 import { Tag } from 'lucide-react'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
 
 interface Props {
   searchParams: Record<string, string | string[] | undefined>
@@ -100,7 +101,10 @@ export default async function DashboardPage({ searchParams }: Props) {
         {/* Consultas de hoje */}
         <Card className="shadow-sm">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Consultas Hoje</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Consultas Hoje</CardTitle>
+              <InfoTooltip text="Agendamentos do dia atual com status Agendado, Confirmado, Realizado ou Faltou. Não inclui cancelamentos." />
+            </div>
           </CardHeader>
           <CardContent>
             {listas.consultasHoje.length === 0 ? (
@@ -129,7 +133,10 @@ export default async function DashboardPage({ searchParams }: Props) {
         {/* Top profissionais */}
         <Card className="shadow-sm">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Top Profissionais</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Top Profissionais</CardTitle>
+              <InfoTooltip text="Profissionais com maior faturamento no período selecionado, ordenados por receita gerada nas consultas realizadas." />
+            </div>
           </CardHeader>
           <CardContent>
             {listas.topProfissionais.length === 0 ? (
@@ -156,10 +163,13 @@ export default async function DashboardPage({ searchParams }: Props) {
         {/* Top Serviços */}
         <Card className="shadow-sm">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Tag className="h-4 w-4 text-indigo-500" />
-              Top Serviços
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Tag className="h-4 w-4 text-indigo-500" />
+                Top Serviços
+              </CardTitle>
+              <InfoTooltip text="Serviços mais vinculados aos agendamentos no período. Conta apenas agendamentos não cancelados." />
+            </div>
           </CardHeader>
           <CardContent>
             {topServicos.length === 0 ? (
@@ -183,7 +193,10 @@ export default async function DashboardPage({ searchParams }: Props) {
         {/* Últimas transações */}
         <Card className="shadow-sm">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Últimas Transações</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Últimas Transações</CardTitle>
+              <InfoTooltip text="As 5 transações financeiras mais recentes (receitas e despesas) cadastradas no sistema, independente do período filtrado." />
+            </div>
           </CardHeader>
           <CardContent>
             {listas.ultimasTransacoes.length === 0 ? (
