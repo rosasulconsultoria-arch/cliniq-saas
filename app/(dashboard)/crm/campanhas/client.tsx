@@ -40,7 +40,7 @@ export function CampanhasClient({ campanhas, templates, servicos }: {
   const [mensagem, setMensagem] = useState('')
   const [assunto, setAssunto] = useState('')
   const [filtroCidade, setFiltroCidade] = useState('')
-  const [filtroServico, setFiltroServico] = useState('')
+  const [filtroServico, setFiltroServico] = useState('todos')
 
   const [destinatarios, setDestinatarios] = useState<Paciente[]>([])
   const [loadingRecipients, startLoadRecipients] = useTransition()
@@ -53,7 +53,7 @@ export function CampanhasClient({ campanhas, templates, servicos }: {
     setMensagem('')
     setAssunto('')
     setFiltroCidade('')
-    setFiltroServico('')
+    setFiltroServico('todos')
     setDestinatarios([])
     setEnviados(new Set())
     setOpen(true)
@@ -69,7 +69,7 @@ export function CampanhasClient({ campanhas, templates, servicos }: {
     startLoadRecipients(async () => {
       const pacientes = await getCrmPacientes({
         cidade: filtroCidade || undefined,
-        servicoId: filtroServico || undefined,
+        servicoId: filtroServico !== 'todos' ? filtroServico : undefined,
       })
       const filtrados = canal === 'WHATSAPP'
         ? pacientes.filter(p => p.telefone)
@@ -229,7 +229,7 @@ export function CampanhasClient({ campanhas, templates, servicos }: {
                     <Select value={filtroServico} onValueChange={setFiltroServico}>
                       <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Todos" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Todos</SelectItem>
+                        <SelectItem value="todos">Todos os serviços</SelectItem>
                         {servicos.map(s => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}
                       </SelectContent>
                     </Select>
