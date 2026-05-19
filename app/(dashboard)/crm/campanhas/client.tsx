@@ -18,7 +18,7 @@ import { ptBR } from 'date-fns/locale'
 
 interface Template { id: string; titulo: string; canal: string; assunto: string | null; corpo: string }
 interface Servico { id: string; nome: string }
-interface Campanha { id: string; titulo: string; canal: string; status: string; totalEnviado: number; criadaEm: Date }
+interface Campanha { id: string; titulo: string; canal: string; status: string; totalEnviado: number; criadaEm: string }
 
 type Paciente = Awaited<ReturnType<typeof getCrmPacientes>>[number]
 

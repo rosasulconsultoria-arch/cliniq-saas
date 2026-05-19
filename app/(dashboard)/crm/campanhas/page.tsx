@@ -7,5 +7,11 @@ export default async function CampanhasPage() {
     db.crmTemplate.findMany({ where: { ativo: true }, orderBy: { titulo: 'asc' } }),
     db.servico.findMany({ where: { ativo: true }, orderBy: { nome: 'asc' } }),
   ])
-  return <CampanhasClient campanhas={campanhas} templates={templates} servicos={servicos} />
+  return (
+    <CampanhasClient
+      campanhas={campanhas.map(c => ({ ...c, criadaEm: c.criadaEm.toISOString() }))}
+      templates={templates}
+      servicos={servicos}
+    />
+  )
 }

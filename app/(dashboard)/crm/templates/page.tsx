@@ -3,5 +3,5 @@ import { TemplatesClient } from './client'
 
 export default async function TemplatesPage() {
   const templates = await db.crmTemplate.findMany({ orderBy: { createdAt: 'desc' } })
-  return <TemplatesClient templates={templates} />
+  return <TemplatesClient templates={templates.map(t => ({ ...t, createdAt: undefined }))} />
 }
