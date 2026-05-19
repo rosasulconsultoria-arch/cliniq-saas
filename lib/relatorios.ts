@@ -101,7 +101,7 @@ export const getDRE = unstable_cache(
     const investimentos = Number(inv._sum.valor ?? 0)
     const totalComissoes = Number(comissoes._sum.valorComissao ?? 0)
     const totalAlugueis = Number(alugueis._sum.valor ?? 0)
-    const lucro = receitas - despesas - totalComissoes + totalAlugueis - investimentos
+    const lucro = receitas + totalComissoes + totalAlugueis - despesas - investimentos
     return { receitas, despesas, investimentos, totalComissoes, totalAlugueis, lucro }
   },
   ['rel-dre'],

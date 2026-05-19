@@ -23,7 +23,7 @@ export default async function ContasAReceberPage() {
   const cards = [
     { titulo: 'Total a Receber', valor: d.totalGeral, cor: 'text-indigo-600', tooltip: 'Soma de todos os valores pendentes: atendimentos futuros, comissões, aluguéis, parcelas de cartão e outras receitas ainda não recebidas.' },
     { titulo: 'Atendimentos Futuros', valor: d.totalAtendimentos, cor: 'text-blue-600', tooltip: 'Valor total dos agendamentos com status Agendado ou Confirmado. O pagamento ainda não foi recebido pois a consulta não foi realizada.' },
-    { titulo: 'Comissões Pendentes', valor: d.totalComissoes, cor: 'text-amber-600', tooltip: 'Comissões devidas aos profissionais comissionados por consultas já realizadas que ainda aguardam pagamento pela clínica.' },
+    { titulo: 'Comissões a Receber', valor: d.totalComissoes, cor: 'text-amber-600', tooltip: 'Comissões que os profissionais comissionados devem repassar à clínica pelos atendimentos já realizados e ainda não quitados.' },
     { titulo: 'Aluguéis Pendentes', valor: d.totalAlugueis, cor: 'text-orange-600', tooltip: 'Mensalidades de aluguel de sala em aberto de profissionais locatários, acumuladas de todos os meses não quitados.' },
     { titulo: 'Parcelas Cartão', valor: d.totalParcelas, cor: 'text-purple-600', tooltip: 'Parcelas de cartão de crédito cadastradas nos parcelamentos que ainda não foram liquidadas ou não venceram.' },
     { titulo: 'Outras Receitas', valor: d.totalReceitas, cor: 'text-emerald-600', tooltip: 'Receitas avulsas cadastradas manualmente no Financeiro com status Pendente — ainda não recebidas.' },
@@ -90,7 +90,7 @@ export default async function ContasAReceberPage() {
       {d.comissoesPendentes.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-            <Handshake className="h-4 w-4" /> Comissões a Receber
+            <Handshake className="h-4 w-4" /> Comissões a Receber dos Profissionais
             <span className="text-xs font-normal">({d.comissoesPendentes.length} · {formatBRL(d.totalComissoes)})</span>
           </h2>
           <div className="rounded-lg border bg-card">

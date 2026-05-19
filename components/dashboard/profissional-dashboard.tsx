@@ -14,6 +14,7 @@ import {
   Wallet,
   Receipt,
 } from 'lucide-react'
+import { InfoTooltip } from '@/components/ui/info-tooltip'
 
 const STATUS_COLORS: Record<string, string> = {
   AGENDADO: 'border-blue-400 text-blue-600',
@@ -36,7 +37,7 @@ interface Props {
 export async function ProfissionalDashboard({ profissionalId, nome }: Props) {
   const d = await getDashboardProfissional(profissionalId)
 
-  const kpis = [
+  const kpis: { titulo: string; valor: string; sub: string; icon: typeof TrendingUp; cor: string; bg: string; tooltip?: string }[] = [
     {
       titulo: 'Faturamento este mês',
       valor: formatBRL(d.faturamentoMes),
@@ -44,14 +45,16 @@ export async function ProfissionalDashboard({ profissionalId, nome }: Props) {
       icon: TrendingUp,
       cor: 'text-emerald-600',
       bg: 'bg-emerald-50 dark:bg-emerald-950/30',
+      tooltip: 'Soma dos valores de todas as consultas com status Realizado no mês atual.',
     },
     {
-      titulo: 'A pagar (comissão/aluguel)',
+      titulo: 'Comissão / Aluguel a Pagar',
       valor: formatBRL(d.valorDevidoPendente),
-      sub: 'Pendente de quitação',
+      sub: 'A repassar para a clínica',
       icon: Wallet,
       cor: 'text-red-500',
       bg: 'bg-red-50 dark:bg-red-950/30',
+      tooltip: 'Total que você deve repassar à clínica: comissão percentual sobre consultas realizadas (COMISSIONADO) ou aluguel mensal da sala (LOCATÁRIO). Valores pendentes de todos os meses em aberto.',
     },
     {
       titulo: 'Pacientes ativos',
@@ -112,8 +115,11 @@ export async function ProfissionalDashboard({ profissionalId, nome }: Props) {
             <Card key={kpi.titulo} className="shadow-sm">
               <CardContent className="pt-5 pb-4">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="text-xs text-muted-foreground mb-1">{kpi.titulo}</p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1 mb-1">
+                      <p className="text-xs text-muted-foreground">{kpi.titulo}</p>
+                      {kpi.tooltip && <InfoTooltip text={kpi.tooltip} />}
+                    </div>
                     <p className={`text-2xl font-bold ${kpi.cor}`}>{kpi.valor}</p>
                     <p className="text-xs text-muted-foreground mt-1">{kpi.sub}</p>
                   </div>

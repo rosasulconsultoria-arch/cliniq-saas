@@ -42,7 +42,7 @@ export default async function RelatorioDREPage({ searchParams }: Props) {
         <CardContent className="pt-4 divide-y">
           <DRERow label="(+) Receitas Operacionais" valor={d.receitas} />
           <DRERow label="(−) Despesas Operacionais" valor={d.despesas} negativo />
-          <DRERow label="(−) Comissões Pagas" valor={d.totalComissoes} negativo />
+          <DRERow label="(+) Comissões Recebidas" valor={d.totalComissoes} />
           <DRERow label="(+) Receita de Aluguéis" valor={d.totalAlugueis} />
           <DRERow label="(−) Investimentos" valor={d.investimentos} negativo />
           <div className="pt-2 pb-1"><Separator /></div>

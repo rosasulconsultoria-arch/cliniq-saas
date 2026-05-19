@@ -45,11 +45,11 @@ export function KPICards(props: Props) {
       tooltip: 'Receita do mês menos Despesas e Investimentos do mês. Representa o resultado financeiro líquido da clínica no período.',
     },
     {
-      titulo: 'Comissões Pendentes',
+      titulo: 'Comissões a Receber',
       valor: props.comissoesPendentes,
       icone: AlertCircle,
       cor: 'text-amber-500',
-      tooltip: 'Total de comissões geradas para profissionais comissionados que ainda não foram pagas. Acumula todos os meses em aberto.',
+      tooltip: 'Total de comissões que os profissionais comissionados ainda devem repassar à clínica pelos atendimentos já realizados. Acumula todos os meses em aberto.',
     },
     {
       titulo: 'Aluguéis Pendentes',

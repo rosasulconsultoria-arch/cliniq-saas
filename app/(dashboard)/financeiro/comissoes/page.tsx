@@ -46,7 +46,7 @@ export default async function ComissoesPage({ searchParams }: Props) {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-muted-foreground">
-            Comissões pendentes:{' '}
+            A receber dos profissionais:{' '}
             <span className="font-semibold text-amber-600">
               {formatBRL(Number(pendentesTotal._sum.valorComissao ?? 0))}
             </span>
