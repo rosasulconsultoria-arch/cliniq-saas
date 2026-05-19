@@ -14,6 +14,7 @@ import {
   Settings,
   Receipt,
   HelpCircle,
+  Tag,
 } from 'lucide-react'
 import type { DashboardUser } from './dashboard-shell'
 
@@ -47,6 +48,12 @@ const NAV_ITEMS = [
     label: 'Salas',
     icon: DoorOpen,
     roles: ['ADMIN', 'RECEPCAO'],
+  },
+  {
+    href: '/servicos',
+    label: 'Serviços',
+    icon: Tag,
+    roles: ['ADMIN', 'PROFISSIONAL', 'RECEPCAO'],
   },
   {
     href: '/financeiro',

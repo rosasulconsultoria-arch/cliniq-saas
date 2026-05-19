@@ -17,6 +17,7 @@ export const AgendamentoSchema = z.object({
   observacoes: z.string().optional(),
   recorrente: z.boolean().default(false),
   totalRecorrencias: z.coerce.number().int().min(2).max(52).optional().nullable(),
+  servicoIds: z.array(z.string()).optional().default([]),
 })
 
 export type AgendamentoFormData = z.infer<typeof AgendamentoSchema>

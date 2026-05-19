@@ -12,6 +12,7 @@ import { criarAgendamento } from '@/app/(dashboard)/agenda/actions'
 import { criarPacienteRapido } from '@/app/(dashboard)/pacientes/actions'
 import { mascaraTelefone } from '@/lib/utils'
 import { PacienteCombobox } from './paciente-combobox'
+import { ServicoMultiselect } from './servico-multiselect'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -80,6 +81,7 @@ export function AgendamentoDialog({ open, onClose, slot, profissionais, salas, u
       dataHoraInicio: '',
       recorrente: false,
       totalRecorrencias: 4,
+      servicoIds: [],
     },
   })
 
@@ -321,7 +323,19 @@ export function AgendamentoDialog({ open, onClose, slot, profissionais, salas, u
             </div>
           </div>
 
-          {/* 5. Recorrência */}
+          {/* 5. Serviços */}
+          <div className="space-y-1.5">
+            <Label>Serviços prestados</Label>
+            <Controller
+              control={control}
+              name="servicoIds"
+              render={({ field }) => (
+                <ServicoMultiselect value={field.value ?? []} onChange={field.onChange} />
+              )}
+            />
+          </div>
+
+          {/* 6. Recorrência */}
           <Separator />
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -372,7 +386,7 @@ export function AgendamentoDialog({ open, onClose, slot, profissionais, salas, u
           </div>
           <Separator />
 
-          {/* 6. Tipo de cobrança */}
+          {/* 7. Tipo de cobrança */}
           <div className="space-y-1.5">
             <Label>Tipo de cobrança</Label>
             <Controller

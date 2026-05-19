@@ -27,6 +27,7 @@ const DashboardCharts = dynamic(
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatBRL } from '@/lib/utils'
+import { Tag } from 'lucide-react'
 
 interface Props {
   searchParams: Record<string, string | string[] | undefined>
@@ -50,10 +51,24 @@ export default async function DashboardPage({ searchParams }: Props) {
   const ate = getSearchParam(searchParams.ate)
   const { inicio, fim, inicioAnterior, fimAnterior, label } = getPeriodDates(periodo, de, ate)
 
-  const [kpis, charts, listas] = await Promise.all([
+  const [kpis, charts, listas, topServicos] = await Promise.all([
     getDashboardKPIs(inicio.toISOString(), fim.toISOString(), inicioAnterior.toISOString(), fimAnterior.toISOString()),
     getDashboardCharts(inicio.toISOString(), fim.toISOString()),
     getDashboardListas(),
+    db.agendamentoServico.findMany({
+      where: {
+        agendamento: { dataHoraInicio: { gte: inicio, lte: fim }, status: { notIn: ['CANCELADO'] } },
+      },
+      include: { servico: { select: { nome: true } } },
+    }).then(rows => {
+      const counts: Record<string, { nome: string; count: number }> = {}
+      for (const r of rows) {
+        const k = r.servicoId
+        counts[k] = counts[k] ?? { nome: r.servico.nome, count: 0 }
+        counts[k].count++
+      }
+      return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 5)
+    }),
   ])
 
   const STATUS_COLORS: Record<string, string> = {
@@ -81,7 +96,7 @@ export default async function DashboardPage({ searchParams }: Props) {
       <DashboardCharts data={charts} />
 
       {/* Bottom lists */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-4 lg:grid-cols-4">
         {/* Consultas de hoje */}
         <Card className="shadow-sm">
           <CardHeader className="pb-3">
@@ -131,6 +146,33 @@ export default async function DashboardPage({ searchParams }: Props) {
                       <p className="text-xs text-muted-foreground">{p.consultas} consultas</p>
                     </div>
                     <span className="text-sm font-semibold text-emerald-600 shrink-0">{formatBRL(p.faturamento)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Top Serviços */}
+        <Card className="shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Tag className="h-4 w-4 text-indigo-500" />
+              Top Serviços
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {topServicos.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">Nenhum serviço no período.</p>
+            ) : (
+              <div className="space-y-3">
+                {topServicos.map((s, i) => (
+                  <div key={i} className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-xs font-bold text-muted-foreground w-4 shrink-0">{i + 1}</span>
+                      <p className="text-sm font-medium truncate">{s.nome}</p>
+                    </div>
+                    <Badge variant="secondary" className="shrink-0 tabular-nums">{s.count}×</Badge>
                   </div>
                 ))}
               </div>

@@ -166,6 +166,7 @@ model Agendamento {
   comissao      Comissao?
   transacoes    TransacaoFinanceira[]
   parcelamentos Parcelamento[]
+  servicos      AgendamentoServico[]
 
   @@index([dataHoraInicio])
   @@index([profissionalId])
@@ -265,6 +266,26 @@ model ConfigClinica {
   logoBase64  String?
   corPrimaria String   @default("#4f46e5")
   updatedAt   DateTime @updatedAt
+}
+
+model Servico {
+  id        String   @id @default(cuid())
+  nome      String   @unique
+  descricao String?
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  agendamentos AgendamentoServico[]
+}
+
+model AgendamentoServico {
+  agendamentoId String
+  servicoId     String
+  agendamento   Agendamento @relation(fields: [agendamentoId], references: [id], onDelete: Cascade)
+  servico       Servico     @relation(fields: [servicoId], references: [id], onDelete: Cascade)
+
+  @@id([agendamentoId, servicoId])
+  @@index([servicoId])
 }
 
 model TaxaImposto {

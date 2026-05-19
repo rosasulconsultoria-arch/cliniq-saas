@@ -94,7 +94,7 @@ export async function criarAgendamento(data: unknown): Promise<{ error?: string;
   const parsed = AgendamentoSchema.safeParse(data)
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Dados inválidos' }
 
-  const { dataHoraInicio, duracao, recorrente, totalRecorrencias, ...rest } = parsed.data
+  const { dataHoraInicio, duracao, recorrente, totalRecorrencias, servicoIds, ...rest } = parsed.data
   const inicio = new Date(dataHoraInicio)
   const fim = new Date(inicio.getTime() + duracao * 60_000)
 
@@ -140,6 +140,15 @@ export async function criarAgendamento(data: unknown): Promise<{ error?: string;
           recorrenciaGrupoId: grupoId,
         })),
       })
+      if (servicoIds && servicoIds.length > 0) {
+        const criados = await db.agendamento.findMany({
+          where: { recorrenciaGrupoId: grupoId },
+          select: { id: true },
+        })
+        await db.agendamentoServico.createMany({
+          data: criados.flatMap(a => servicoIds.map(s => ({ agendamentoId: a.id, servicoId: s }))),
+        })
+      }
       revalidatePath('/agenda')
       return { count: totalRecorrencias }
     } catch {
@@ -165,6 +174,13 @@ export async function criarAgendamento(data: unknown): Promise<{ error?: string;
         sala: { select: { nome: true } },
       },
     })
+
+    // Vincular serviços
+    if (servicoIds && servicoIds.length > 0) {
+      await db.agendamentoServico.createMany({
+        data: servicoIds.map(s => ({ agendamentoId: agend.id, servicoId: s })),
+      })
+    }
 
     // Auto-criar parcelamento se cartão crédito com parcelas > 1
     const { formaPagamento, bandeiraCartao, numeroParcelas, taxaCartaoPerc, valor } = rest as any
