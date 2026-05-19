@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { toast } from 'sonner'
-import { CheckCircle, XCircle, AlertCircle, Loader2, Send, MessageCircle } from 'lucide-react'
+import { CheckCircle, XCircle, AlertCircle, Loader2, Send, MessageCircle, Receipt } from 'lucide-react'
 import { atualizarStatusAgendamento } from '@/app/(dashboard)/agenda/actions'
 import { reenviarConfirmacao } from '@/app/(dashboard)/agenda/notificacao-actions'
 import { Button } from '@/components/ui/button'
@@ -136,6 +136,18 @@ export function AppointmentDetailsDialog({ agendamento, open, onClose, onSuccess
                 </div>
               </>
             )}
+
+            {/* Recibo */}
+            <Separator />
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={() => window.open(`/api/recibo?id=${agendamento.id}`, '_blank')}
+            >
+              <Receipt className="h-4 w-4 mr-1.5" />
+              Emitir Recibo / PDF
+            </Button>
 
             {/* Notificações */}
             <Separator />
