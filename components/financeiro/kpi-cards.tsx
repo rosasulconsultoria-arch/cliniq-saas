@@ -19,30 +19,32 @@ interface Props {
   lucroLiquido: number
   comissoesPendentes: number
   alugueisPendentes: number
+  periodoLabel?: string
 }
 
 export function KPICards(props: Props) {
+  const p = props.periodoLabel ?? 'Mês atual'
   const kpis: KPI[] = [
     {
-      titulo: 'Receita do Mês',
+      titulo: `Receita — ${p}`,
       valor: props.receitaMes,
       icone: TrendingUp,
       cor: 'text-emerald-600',
-      tooltip: 'Soma de todas as transações do tipo Receita com status Pago no mês atual. Inclui consultas realizadas e recebimentos de aluguéis.',
+      tooltip: `Soma de todas as receitas pagas no período selecionado (${p}). Inclui consultas realizadas e recebimentos de aluguéis.`,
     },
     {
-      titulo: 'Despesas do Mês',
+      titulo: `Despesas — ${p}`,
       valor: props.despesaMes,
       icone: TrendingDown,
       cor: 'text-red-500',
-      tooltip: 'Total de despesas operacionais com status Pago no mês atual (aluguel do espaço, serviços, material de escritório etc.).',
+      tooltip: `Total de despesas operacionais pagas no período (${p}): aluguel do espaço, serviços, materiais etc.`,
     },
     {
       titulo: 'Lucro Líquido',
       valor: props.lucroLiquido,
       icone: DollarSign,
       cor: props.lucroLiquido >= 0 ? 'text-emerald-600' : 'text-red-500',
-      tooltip: 'Receita do mês menos Despesas e Investimentos do mês. Representa o resultado financeiro líquido da clínica no período.',
+      tooltip: `Receita menos Despesas no período (${p}). Representa o resultado financeiro líquido da clínica.`,
     },
     {
       titulo: 'Comissões a Receber',
@@ -59,11 +61,11 @@ export function KPICards(props: Props) {
       tooltip: 'Total de aluguéis mensais de profissionais locatários que ainda não foram recebidos. Acumula todos os meses em aberto.',
     },
     {
-      titulo: 'Investimentos',
+      titulo: `Investimentos — ${p}`,
       valor: props.investimentosMes,
       icone: DollarSign,
       cor: 'text-violet-500',
-      tooltip: 'Soma dos investimentos pagos no mês (equipamentos, reformas, tecnologia etc.). São separados das despesas operacionais.',
+      tooltip: `Soma dos investimentos pagos no período (${p}): equipamentos, reformas, tecnologia etc. Separados das despesas operacionais.`,
     },
   ]
 
