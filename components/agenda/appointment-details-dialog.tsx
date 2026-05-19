@@ -145,16 +145,10 @@ export function AppointmentDetailsDialog({ agendamento, open, onClose, onSuccess
               className="w-full"
               onClick={async () => {
                 try {
-                  const res = await fetch(`/api/recibo?id=${agendamento.id}&pdf=1`)
-                  if (!res.ok) throw new Error()
-                  const blob = await res.blob()
-                  const url = URL.createObjectURL(blob)
-                  const a = document.createElement('a')
-                  a.href = url
-                  a.download = `recibo-${agendamento.id.slice(-8).toUpperCase()}.pdf`
-                  a.click()
-                  URL.revokeObjectURL(url)
-                } catch {
+                  const { downloadReciboPDF } = await import('@/lib/pdf-client')
+                  await downloadReciboPDF(agendamento.id)
+                } catch (e) {
+                  console.error(e)
                   window.open(`/api/recibo?id=${agendamento.id}`, '_blank')
                 }
               }}

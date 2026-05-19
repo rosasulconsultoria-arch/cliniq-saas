@@ -40,17 +40,8 @@ export function ExportButtons({ csvHref, filename = 'relatorio', onPrint }: Prop
     if (onPrint) { onPrint(); return }
     setPdfPending(true)
     try {
-      // Build PDF URL from csvHref: /api/relatorios/csv?tipo=X&... → /api/relatorios/pdf?tipo=X&...
-      const pdfHref = csvHref.replace('/api/relatorios/csv', '/api/relatorios/pdf')
-      const res = await fetch(pdfHref)
-      if (!res.ok) throw new Error('Erro ao gerar PDF')
-      const blob = await res.blob()
-      const url = URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${filename}.pdf`
-      a.click()
-      URL.revokeObjectURL(url)
+      const { downloadRelatorioPDF } = await import('@/lib/pdf-client')
+      await downloadRelatorioPDF(csvHref, filename)
       toast.success('PDF baixado!')
     } catch {
       toast.error('Erro ao gerar PDF')
