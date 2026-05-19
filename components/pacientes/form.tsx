@@ -168,7 +168,7 @@ export function PacienteForm({ defaultValues, isEdit = false, id }: Props) {
           <div className="sm:col-span-1 space-y-1.5">
             <Label htmlFor="estado">Estado</Label>
             <Input id="estado" placeholder="SP" maxLength={2}
-              {...register('estado', { onChange: e => e.target.value = e.target.value.toUpperCase() })} />
+              {...register('estado')} />
           </div>
         </div>
 

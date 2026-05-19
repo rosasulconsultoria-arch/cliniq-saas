@@ -1,9 +1,8 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet'
 import { encontrarCidade } from '@/data/cidades-br'
-import 'leaflet/dist/leaflet.css'
 
 interface PacienteLocal { cidade: string | null }
 
