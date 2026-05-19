@@ -34,7 +34,7 @@ const NAV_ITEMS = [
   },
   {
     href: '/pacientes',
-    label: 'Pacientes',
+    label: 'Clientes',
     icon: Users,
     roles: ['ADMIN', 'PROFISSIONAL', 'RECEPCAO'],
   },

@@ -178,9 +178,9 @@ export function AgendamentoDialog({ open, onClose, slot, profissionais, salas, u
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
 
-          {/* 1. Paciente */}
+          {/* 1. Cliente */}
           <div className="space-y-1.5">
-            <Label>Paciente *</Label>
+            <Label>Cliente *</Label>
             <Controller
               control={control}
               name="pacienteId"

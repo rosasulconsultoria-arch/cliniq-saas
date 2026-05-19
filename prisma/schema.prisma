@@ -94,9 +94,13 @@ model Paciente {
   email          String?
   dataNascimento DateTime?
   genero         String?
+  endereco       String?
+  numero         String?
+  complemento    String?
   bairro         String?
   cidade         String?
   estado         String?
+  cep            String?
   observacoes    String?
   ativo          Boolean   @default(true)
   createdAt      DateTime  @default(now())

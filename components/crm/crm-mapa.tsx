@@ -5,11 +5,14 @@ import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet'
 import { encontrarCidade } from '@/data/cidades-br'
 
 interface PacienteLocal { cidade: string | null }
+interface ClinicaLocal { nome: string; cidade: string | null }
 
-interface Props { pacientes: PacienteLocal[] }
+interface Props {
+  pacientes: PacienteLocal[]
+  clinica?: ClinicaLocal
+}
 
-export function CrmMapa({ pacientes }: Props) {
-  // Count patients per city
+export function CrmMapa({ pacientes, clinica }: Props) {
   const cidadeContagem = useMemo(() => {
     const counts: Record<string, number> = {}
     pacientes.forEach(p => {
@@ -26,6 +29,8 @@ export function CrmMapa({ pacientes }: Props) {
       return [{ cidade, count, lat: coords.lat, lng: coords.lng, uf: coords.uf }]
     }).sort((a, b) => b.count - a.count)
   }, [cidadeContagem])
+
+  const clinicaCoords = clinica?.cidade ? encontrarCidade(clinica.cidade) : null
 
   const maxCount = Math.max(...pontos.map(p => p.count), 1)
 
@@ -46,13 +51,24 @@ export function CrmMapa({ pacientes }: Props) {
     .filter(([cidade]) => !encontrarCidade(cidade))
     .reduce((s, [, c]) => s + c, 0)
 
+  const mapCenter: [number, number] = clinicaCoords
+    ? [clinicaCoords.lat, clinicaCoords.lng]
+    : [-14.235, -51.925]
+  const mapZoom = clinicaCoords ? 9 : 4
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
         <span>{pontos.length} cidade(s) mapeada(s)</span>
-        {naoMapeados > 0 && <span className="text-amber-600">{naoMapeados} paciente(s) em cidades não mapeadas</span>}
-        {semCidade > 0 && <span>{semCidade} paciente(s) sem cidade cadastrada</span>}
+        {naoMapeados > 0 && <span className="text-amber-600">{naoMapeados} cliente(s) em cidades não mapeadas</span>}
+        {semCidade > 0 && <span>{semCidade} cliente(s) sem cidade cadastrada</span>}
         <div className="flex items-center gap-3 ml-auto text-xs">
+          {clinicaCoords && (
+            <span className="flex items-center gap-1">
+              <span className="inline-block w-3 h-3 rounded-full bg-indigo-600 border-2 border-white shadow" />
+              Clínica
+            </span>
+          )}
           <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-green-500" /> Poucos</span>
           <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-yellow-400" /> Médio</span>
           <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 rounded-full bg-orange-500" /> Alto</span>
@@ -62,8 +78,8 @@ export function CrmMapa({ pacientes }: Props) {
 
       <div className="rounded-xl overflow-hidden border" style={{ height: 480 }}>
         <MapContainer
-          center={[-14.235, -51.925]}
-          zoom={4}
+          center={mapCenter}
+          zoom={mapZoom}
           style={{ height: '100%', width: '100%' }}
           scrollWheelZoom
         >
@@ -71,6 +87,24 @@ export function CrmMapa({ pacientes }: Props) {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+
+          {/* Marcador da clínica */}
+          {clinicaCoords && (
+            <CircleMarker
+              center={[clinicaCoords.lat, clinicaCoords.lng]}
+              radius={14}
+              pathOptions={{ fillColor: '#4f46e5', fillOpacity: 0.95, color: '#fff', weight: 3 }}
+            >
+              <Tooltip direction="top" offset={[0, -14]} opacity={0.97} permanent={false}>
+                <div className="text-xs">
+                  <p className="font-bold text-indigo-700">📍 {clinica?.nome}</p>
+                  <p className="text-muted-foreground">{clinicaCoords.nome} — {clinicaCoords.uf}</p>
+                </div>
+              </Tooltip>
+            </CircleMarker>
+          )}
+
+          {/* Marcadores de clientes */}
           {pontos.map(p => (
             <CircleMarker
               key={p.cidade}
@@ -78,7 +112,7 @@ export function CrmMapa({ pacientes }: Props) {
               radius={getRadius(p.count)}
               pathOptions={{
                 fillColor: getColor(p.count),
-                fillOpacity: 0.7,
+                fillOpacity: 0.65,
                 color: getColor(p.count),
                 weight: 1,
               }}
@@ -86,7 +120,7 @@ export function CrmMapa({ pacientes }: Props) {
               <Tooltip direction="top" offset={[0, -10]} opacity={0.95}>
                 <div className="text-xs font-medium">
                   <p className="font-semibold">{p.cidade} — {p.uf}</p>
-                  <p>{p.count} paciente{p.count !== 1 ? 's' : ''}</p>
+                  <p>{p.count} cliente{p.count !== 1 ? 's' : ''}</p>
                 </div>
               </Tooltip>
             </CircleMarker>
@@ -94,7 +128,6 @@ export function CrmMapa({ pacientes }: Props) {
         </MapContainer>
       </div>
 
-      {/* Top cidades */}
       {pontos.length > 0 && (
         <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {pontos.slice(0, 6).map((p, i) => (

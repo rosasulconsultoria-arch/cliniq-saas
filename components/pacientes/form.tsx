@@ -60,7 +60,7 @@ export function PacienteForm({ defaultValues, isEdit = false, id }: Props) {
         : await criarPaciente(data)
 
       if (result?.error) { toast.error(result.error); return }
-      toast.success(isEdit ? 'Paciente atualizado!' : 'Paciente cadastrado!')
+      toast.success(isEdit ? 'Cliente atualizado!' : 'Cliente cadastrado!')
       router.push('/pacientes')
       router.refresh()
     })
@@ -70,7 +70,7 @@ export function PacienteForm({ defaultValues, isEdit = false, id }: Props) {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
       {/* Dados pessoais */}
       <section className="space-y-4">
-        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dados Pessoais</h3>
+        <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dados do Cliente</h3>
         <div className="space-y-1.5">
           <Label htmlFor="nome">Nome completo *</Label>
           <Input id="nome" placeholder="Maria da Silva" {...register('nome')} />
@@ -157,18 +157,37 @@ export function PacienteForm({ defaultValues, isEdit = false, id }: Props) {
 
         {/* Localização */}
         <div className="grid gap-4 sm:grid-cols-3">
+          <div className="sm:col-span-2 space-y-1.5">
+            <Label htmlFor="endereco">Endereço</Label>
+            <Input id="endereco" placeholder="Rua, Avenida..." {...register('endereco')} />
+          </div>
           <div className="sm:col-span-1 space-y-1.5">
+            <Label htmlFor="numero">Número</Label>
+            <Input id="numero" placeholder="123" {...register('numero')} />
+          </div>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="complemento">Complemento</Label>
+            <Input id="complemento" placeholder="Apto 12" {...register('complemento')} />
+          </div>
+          <div className="space-y-1.5">
             <Label htmlFor="bairro">Bairro</Label>
             <Input id="bairro" placeholder="Centro" {...register('bairro')} />
           </div>
-          <div className="sm:col-span-1 space-y-1.5">
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <div className="space-y-1.5">
+            <Label htmlFor="cep">CEP</Label>
+            <Input id="cep" placeholder="00000-000" maxLength={9} {...register('cep')} />
+          </div>
+          <div className="space-y-1.5">
             <Label htmlFor="cidade">Cidade</Label>
             <Input id="cidade" placeholder="São Paulo" {...register('cidade')} />
           </div>
-          <div className="sm:col-span-1 space-y-1.5">
+          <div className="space-y-1.5">
             <Label htmlFor="estado">Estado</Label>
-            <Input id="estado" placeholder="SP" maxLength={2}
-              {...register('estado')} />
+            <Input id="estado" placeholder="SP" maxLength={2} {...register('estado')} />
           </div>
         </div>
 
@@ -196,7 +215,7 @@ export function PacienteForm({ defaultValues, isEdit = false, id }: Props) {
         <Button type="button" variant="outline" onClick={() => router.back()} disabled={isPending}>Cancelar</Button>
         <Button type="submit" disabled={isPending}>
           {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          {isEdit ? 'Salvar Alterações' : 'Cadastrar Paciente'}
+          {isEdit ? 'Salvar Alterações' : 'Cadastrar Cliente'}
         </Button>
       </div>
     </form>

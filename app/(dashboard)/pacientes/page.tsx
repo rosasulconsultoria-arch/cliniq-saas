@@ -45,13 +45,13 @@ export default async function PacientesPage({ searchParams }: Props) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Pacientes</h1>
-          <p className="text-sm text-muted-foreground mt-1">Gerencie os pacientes da clínica</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Clientes</h1>
+          <p className="text-sm text-muted-foreground mt-1">Gerencie os clientes da clínica</p>
         </div>
         <Button asChild>
           <Link href="/pacientes/novo">
             <Plus className="h-4 w-4 mr-2" />
-            Novo Paciente
+            Novo Cliente
           </Link>
         </Button>
       </div>
@@ -63,9 +63,9 @@ export default async function PacientesPage({ searchParams }: Props) {
       {dados.length === 0 ? (
         <EmptyState
           icon={Users}
-          title="Nenhum paciente encontrado"
-          description={q ? `Nenhum resultado para "${q}"` : 'Cadastre o primeiro paciente para começar.'}
-          action={!q ? <Button asChild><Link href="/pacientes/novo">Cadastrar Paciente</Link></Button> : undefined}
+          title="Nenhum cliente encontrado"
+          description={q ? `Nenhum resultado para "${q}"` : 'Cadastre o primeiro cliente para começar.'}
+          action={!q ? <Button asChild><Link href="/pacientes/novo">Cadastrar Cliente</Link></Button> : undefined}
         />
       ) : (
         <div className="rounded-lg border bg-card">
@@ -104,7 +104,7 @@ export default async function PacientesPage({ searchParams }: Props) {
                       </Button>
                       <DeleteButton
                         onDelete={deletarPaciente.bind(null, p.id)}
-                        description={`Excluir o paciente "${p.nome}"? Esta ação não pode ser desfeita.`}
+                        description={`Excluir o cliente "${p.nome}"? Esta ação não pode ser desfeita.`}
                       />
                     </div>
                   </TableCell>

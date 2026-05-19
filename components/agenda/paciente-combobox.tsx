@@ -17,7 +17,7 @@ interface Props {
   placeholder?: string
 }
 
-export function PacienteCombobox({ value, onChange, onCadastrar, placeholder = 'Buscar paciente...' }: Props) {
+export function PacienteCombobox({ value, onChange, onCadastrar, placeholder = 'Buscar cliente...' }: Props) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [resultados, setResultados] = useState<Paciente[]>([])
@@ -61,6 +61,7 @@ export function PacienteCombobox({ value, onChange, onCadastrar, placeholder = '
         <Command shouldFilter={false}>
           <CommandInput
             placeholder="Digite nome ou CPF..."
+
             value={query}
             onValueChange={handleSearch}
           />
@@ -73,7 +74,7 @@ export function PacienteCombobox({ value, onChange, onCadastrar, placeholder = '
               <CommandEmpty>Digite pelo menos 2 caracteres</CommandEmpty>
             ) : resultados.length === 0 ? (
               <div className="py-2">
-                <p className="text-sm text-center text-muted-foreground px-4 py-1">Nenhum paciente encontrado</p>
+                <p className="text-sm text-center text-muted-foreground px-4 py-1">Nenhum cliente encontrado</p>
                 {onCadastrar && (
                   <button
                     type="button"
@@ -81,7 +82,7 @@ export function PacienteCombobox({ value, onChange, onCadastrar, placeholder = '
                     onClick={() => { onCadastrar(query); setOpen(false) }}
                   >
                     <UserPlus className="h-4 w-4" />
-                    Cadastrar &ldquo;{query}&rdquo; como paciente
+                    Cadastrar &ldquo;{query}&rdquo; como cliente
                   </button>
                 )}
               </div>

@@ -1,4 +1,5 @@
 import { getCrmPacientes } from '../actions'
+import { db } from '@/lib/db'
 import dynamic from 'next/dynamic'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -18,13 +19,22 @@ const CrmMapa = dynamic(
 )
 
 export default async function CrmMapaPage() {
-  const pacientes = await getCrmPacientes()
+  const [pacientes, config] = await Promise.all([
+    getCrmPacientes(),
+    db.configClinica.findUnique({ where: { id: 'default' } }),
+  ])
+
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Distribuição geográfica dos pacientes ativos. O tamanho e a cor dos círculos representam a concentração por cidade.
+        Distribuição geográfica dos clientes ativos.
+        O marcador azul indica a localização da clínica.
+        Os círculos coloridos mostram a concentração de clientes por cidade.
       </p>
-      <CrmMapa pacientes={pacientes.map(p => ({ cidade: p.cidade }))} />
+      <CrmMapa
+        pacientes={pacientes.map(p => ({ cidade: p.cidade }))}
+        clinica={{ nome: config?.nome ?? 'Clínica', cidade: config?.cidade ?? null }}
+      />
     </div>
   )
 }

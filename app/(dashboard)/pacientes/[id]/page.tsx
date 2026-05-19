@@ -25,9 +25,13 @@ export default async function EditarPacientePage({ params }: Props) {
       ? format(paciente.dataNascimento, 'yyyy-MM-dd')
       : '',
     genero: paciente.genero ?? '',
+    endereco: (paciente as any).endereco ?? '',
+    numero: (paciente as any).numero ?? '',
+    complemento: (paciente as any).complemento ?? '',
     bairro: (paciente as any).bairro ?? '',
     cidade: (paciente as any).cidade ?? '',
     estado: (paciente as any).estado ?? '',
+    cep: (paciente as any).cep ?? '',
     observacoes: paciente.observacoes ?? '',
     ativo: paciente.ativo,
   }
