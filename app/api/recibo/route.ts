@@ -1,7 +1,10 @@
+import { renderToBuffer } from '@react-pdf/renderer'
+import { createElement } from 'react'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { ReceiboPDF, type ReciboData } from '@/components/pdf/recibo-pdf'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,6 +47,9 @@ export async function GET(req: Request) {
 
   if (!ag) return new Response('Agendamento não encontrado', { status: 404 })
 
+  const isPdf = new URL(req.url).searchParams.get('pdf') === '1'
+
+  // ── Shared data ─────────────────────────────────────────────
   const inicio = new Date(ag.dataHoraInicio)
   const fim = new Date(ag.dataHoraFim)
   const duracao = Math.round((fim.getTime() - inicio.getTime()) / 60_000)
@@ -69,6 +75,38 @@ export async function GET(req: Request) {
   const formaPag = ag.formaPagamento ? FORMA[ag.formaPagamento] ?? ag.formaPagamento : '—'
   const parcelasInfo = (ag as any).numeroParcelas > 1 ? ` (${(ag as any).numeroParcelas}×)` : ''
 
+  // ── PDF download ────────────────────────────────────────────
+  if (isPdf) {
+    const data: ReciboData = {
+      reciboNum,
+      clinicaNome,
+      logoBase64: cfg?.logoBase64 ?? null,
+      cor,
+      pacienteNome: ag.paciente.nome,
+      pacienteCpf: cpfMask(ag.paciente.cpf),
+      pacienteTelefone: ag.paciente.telefone ?? null,
+      pacienteEmail: ag.paciente.email ?? null,
+      profissionalLabel,
+      dataServico,
+      horario,
+      salaNome: ag.sala.nome,
+      servicoDesc,
+      valor: brl(Number(ag.valor)),
+      formaPagamento: formaPag,
+      parcelasInfo,
+      observacoes: ag.observacoes ?? null,
+      emitidoEm,
+    }
+    const buffer = await renderToBuffer(createElement(ReceiboPDF, { d: data }))
+    return new Response(buffer, {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="recibo-${reciboNum}.pdf"`,
+      },
+    })
+  }
+
+  // ── HTML preview ────────────────────────────────────────────
   const html = `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
