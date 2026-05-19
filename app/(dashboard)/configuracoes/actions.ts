@@ -18,15 +18,37 @@ export interface ConfigClinicaData {
   cep?: string | null
   telefone?: string | null
   email?: string | null
+  lat?: number | null
+  lng?: number | null
+}
+
+async function geocodificarEndereco(data: ConfigClinicaData): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const partes = [data.endereco, data.numero, data.bairro, data.cidade, data.estado, 'Brasil'].filter(Boolean)
+    if (partes.length < 2) return null
+    const q = encodeURIComponent(partes.join(', '))
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${q}&format=json&limit=1`, {
+      headers: { 'User-Agent': 'ClinicaPsiGestao/1.0 (clinica-psi-rosy.vercel.app)' },
+    })
+    const json = await res.json()
+    if (!json?.[0]) return null
+    return { lat: parseFloat(json[0].lat), lng: parseFloat(json[0].lon) }
+  } catch {
+    return null
+  }
 }
 
 export async function salvarConfigClinica(data: ConfigClinicaData): Promise<{ error?: string }> {
   await assertAdmin()
   try {
+    // Geocodifica o endereço completo para obter coordenadas precisas
+    const coords = await geocodificarEndereco(data)
+    const payload = { ...data, ...(coords ? { lat: coords.lat, lng: coords.lng } : {}) }
+
     await db.configClinica.upsert({
       where: { id: 'default' },
-      update: data,
-      create: { id: 'default', ...data },
+      update: payload,
+      create: { id: 'default', ...payload },
     })
     revalidatePath('/', 'layout')
     return {}

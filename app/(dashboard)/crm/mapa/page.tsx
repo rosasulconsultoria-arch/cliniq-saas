@@ -33,7 +33,12 @@ export default async function CrmMapaPage() {
       </p>
       <CrmMapa
         pacientes={pacientes.map(p => ({ cidade: p.cidade }))}
-        clinica={{ nome: config?.nome ?? 'Clínica', cidade: config?.cidade ?? null }}
+        clinica={{
+        nome: config?.nome ?? 'Clínica',
+        cidade: config?.cidade ?? null,
+        lat: (config as any)?.lat ?? null,
+        lng: (config as any)?.lng ?? null,
+      }}
       />
     </div>
   )

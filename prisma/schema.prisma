@@ -282,6 +282,8 @@ model ConfigClinica {
   cep         String?
   telefone    String?
   email       String?
+  lat         Float?
+  lng         Float?
   updatedAt   DateTime @updatedAt
 }
 

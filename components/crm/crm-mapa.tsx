@@ -5,7 +5,7 @@ import { MapContainer, TileLayer, CircleMarker, Tooltip } from 'react-leaflet'
 import { encontrarCidade } from '@/data/cidades-br'
 
 interface PacienteLocal { cidade: string | null }
-interface ClinicaLocal { nome: string; cidade: string | null }
+interface ClinicaLocal { nome: string; cidade: string | null; lat?: number | null; lng?: number | null }
 
 interface Props {
   pacientes: PacienteLocal[]
@@ -30,7 +30,10 @@ export function CrmMapa({ pacientes, clinica }: Props) {
     }).sort((a, b) => b.count - a.count)
   }, [cidadeContagem])
 
-  const clinicaCoords = clinica?.cidade ? encontrarCidade(clinica.cidade) : null
+  // Usa lat/lng exatos (geocodificados ao salvar configurações) ou fallback por cidade
+  const clinicaCoords = clinica?.lat && clinica?.lng
+    ? { lat: clinica.lat, lng: clinica.lng, nome: clinica.cidade ?? '', uf: '' }
+    : clinica?.cidade ? encontrarCidade(clinica.cidade) : null
 
   const maxCount = Math.max(...pontos.map(p => p.count), 1)
 
