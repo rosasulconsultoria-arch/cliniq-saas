@@ -298,6 +298,28 @@ model AgendamentoServico {
   @@index([servicoId])
 }
 
+model CrmTemplate {
+  id        String   @id @default(cuid())
+  titulo    String
+  canal     String   // WHATSAPP | EMAIL
+  assunto   String?
+  corpo     String
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+model CrmCampanha {
+  id         String   @id @default(cuid())
+  titulo     String
+  canal      String   // WHATSAPP | EMAIL
+  mensagem   String
+  assunto    String?
+  filtros    String?  // JSON com filtros aplicados
+  status     String   @default("RASCUNHO")
+  totalEnviado Int    @default(0)
+  criadaEm   DateTime @default(now())
+}
+
 model TaxaImposto {
   id        String   @id @default(cuid())
   nome      String

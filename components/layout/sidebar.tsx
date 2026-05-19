@@ -15,6 +15,7 @@ import {
   Receipt,
   HelpCircle,
   Tag,
+  HeartHandshake,
 } from 'lucide-react'
 import type { DashboardUser } from './dashboard-shell'
 
@@ -54,6 +55,12 @@ const NAV_ITEMS = [
     label: 'Serviços',
     icon: Tag,
     roles: ['ADMIN', 'PROFISSIONAL', 'RECEPCAO'],
+  },
+  {
+    href: '/crm',
+    label: 'CRM',
+    icon: HeartHandshake,
+    roles: ['ADMIN'],
   },
   {
     href: '/financeiro',
