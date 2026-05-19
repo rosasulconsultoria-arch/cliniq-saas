@@ -9,10 +9,10 @@ export default async function ConfiguracoesPage() {
   const user = session?.user
 
   const config = await db.configClinica.findUnique({ where: { id: 'default' } }) ?? {
-    id: 'default',
-    nome: 'Clínica de Psicologia',
-    logoBase64: null,
-    corPrimaria: '#4f46e5',
+    id: 'default', nome: 'Clínica de Psicologia', logoBase64: null, corPrimaria: '#4f46e5',
+    cnpj: null, endereco: null, numero: null, complemento: null, bairro: null,
+    cidade: null, estado: null, cep: null, telefone: null, email: null,
+    updatedAt: new Date(),
   }
 
   return (
@@ -26,6 +26,11 @@ export default async function ConfiguracoesPage() {
         initialNome={config.nome}
         initialCor={config.corPrimaria}
         initialLogo={config.logoBase64 ?? null}
+        initialDados={{
+          cnpj: config.cnpj, endereco: config.endereco, numero: config.numero,
+          complemento: config.complemento, bairro: config.bairro, cidade: config.cidade,
+          estado: config.estado, cep: config.cep, telefone: config.telefone, email: config.email,
+        }}
       />
 
       <Card>

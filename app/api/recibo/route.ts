@@ -77,11 +77,19 @@ export async function GET(req: Request) {
 
   // ── PDF download ────────────────────────────────────────────
   if (isPdf) {
+    const enderecoCompleto = [
+      cfg?.endereco, cfg?.numero, cfg?.complemento, cfg?.bairro, cfg?.cidade && cfg?.estado ? `${cfg.cidade}/${cfg.estado}` : (cfg?.cidade ?? cfg?.estado), cfg?.cep,
+    ].filter(Boolean).join(', ')
+
     const data: ReciboData = {
       reciboNum,
       clinicaNome,
       logoBase64: cfg?.logoBase64 ?? null,
       cor,
+      clinicaCnpj: cfg?.cnpj ?? null,
+      clinicaEndereco: enderecoCompleto || null,
+      clinicaTelefone: cfg?.telefone ?? null,
+      clinicaEmail: cfg?.email ?? null,
       pacienteNome: ag.paciente.nome,
       pacienteCpf: cpfMask(ag.paciente.cpf),
       pacienteTelefone: ag.paciente.telefone ?? null,
@@ -163,7 +171,14 @@ export async function GET(req: Request) {
 
   <!-- Header -->
   <div class="header">
-    <div>${logoTag}</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      ${logoTag}
+      <div style="font-size:11px;color:#6b7280;line-height:1.5">
+        ${cfg?.cnpj ? `<div>CNPJ: ${cfg.cnpj}</div>` : ''}
+        ${enderecoCompleto ? `<div>${enderecoCompleto}</div>` : ''}
+        ${cfg?.telefone || cfg?.email ? `<div>${[cfg?.telefone, cfg?.email].filter(Boolean).join(' · ')}</div>` : ''}
+      </div>
+    </div>
     <div class="header-right">
       <h2>RECIBO DE SERVIÇOS</h2>
       <div class="recibo-num">${reciboNum}</div>

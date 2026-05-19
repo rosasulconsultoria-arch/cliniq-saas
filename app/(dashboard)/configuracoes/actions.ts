@@ -4,17 +4,29 @@ import { db } from '@/lib/db'
 import { revalidatePath } from 'next/cache'
 import { assertAdmin } from '@/lib/auth-guard'
 
-export async function salvarConfigClinica(data: {
+export interface ConfigClinicaData {
   nome: string
   corPrimaria: string
   logoBase64?: string | null
-}): Promise<{ error?: string }> {
+  cnpj?: string | null
+  endereco?: string | null
+  numero?: string | null
+  complemento?: string | null
+  bairro?: string | null
+  cidade?: string | null
+  estado?: string | null
+  cep?: string | null
+  telefone?: string | null
+  email?: string | null
+}
+
+export async function salvarConfigClinica(data: ConfigClinicaData): Promise<{ error?: string }> {
   await assertAdmin()
   try {
     await db.configClinica.upsert({
       where: { id: 'default' },
-      update: { nome: data.nome, corPrimaria: data.corPrimaria, logoBase64: data.logoBase64 ?? null },
-      create: { id: 'default', nome: data.nome, corPrimaria: data.corPrimaria, logoBase64: data.logoBase64 ?? null },
+      update: data,
+      create: { id: 'default', ...data },
     })
     revalidatePath('/', 'layout')
     return {}

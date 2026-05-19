@@ -44,6 +44,10 @@ export interface ReciboData {
   clinicaNome: string
   logoBase64: string | null
   cor: string
+  clinicaCnpj: string | null
+  clinicaEndereco: string | null
+  clinicaTelefone: string | null
+  clinicaEmail: string | null
   pacienteNome: string
   pacienteCpf: string
   pacienteTelefone: string | null
@@ -68,10 +72,21 @@ export function ReceiboPDF({ d }: { d: ReciboData }) {
       <Page size="A4" style={s.page}>
         {/* Header */}
         <View style={s.header}>
-          {d.logoBase64
-            ? <Image src={d.logoBase64.startsWith('data:') ? d.logoBase64 : `data:image/png;base64,${d.logoBase64}`} style={s.logo} />
-            : <Text style={[s.clinicaName, { color: d.cor }]}>{d.clinicaNome}</Text>
-          }
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            {d.logoBase64 && (
+              <Image src={d.logoBase64.startsWith('data:') ? d.logoBase64 : `data:image/png;base64,${d.logoBase64}`} style={s.logo} />
+            )}
+            <View>
+              <Text style={[s.clinicaName, { color: d.cor }]}>{d.clinicaNome}</Text>
+              {d.clinicaCnpj && <Text style={{ fontSize: 8, color: '#6b7280', marginTop: 2 }}>CNPJ: {d.clinicaCnpj}</Text>}
+              {d.clinicaEndereco && <Text style={{ fontSize: 8, color: '#6b7280' }}>{d.clinicaEndereco}</Text>}
+              {(d.clinicaTelefone || d.clinicaEmail) && (
+                <Text style={{ fontSize: 8, color: '#6b7280' }}>
+                  {[d.clinicaTelefone, d.clinicaEmail].filter(Boolean).join('  ·  ')}
+                </Text>
+              )}
+            </View>
+          </View>
           <View style={s.headerRight}>
             <Text style={s.titulo}>RECIBO DE SERVIÇOS</Text>
             <Text style={s.reciboNum}>{d.reciboNum}</Text>

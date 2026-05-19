@@ -265,6 +265,16 @@ model ConfigClinica {
   nome        String   @default("Clínica de Psicologia")
   logoBase64  String?
   corPrimaria String   @default("#4f46e5")
+  cnpj        String?
+  endereco    String?
+  numero      String?
+  complemento String?
+  bairro      String?
+  cidade      String?
+  estado      String?
+  cep         String?
+  telefone    String?
+  email       String?
   updatedAt   DateTime @updatedAt
 }
 
