@@ -1,4 +1,4 @@
-const BASE_URL = process.env.ASAAS_BASE_URL ?? 'https://api.asaas.com/v3'
+const BASE_URL = process.env.ASAAS_BASE_URL ?? 'https://www.asaas.com/api/v3'
 
 function headers(apiKey: string) {
   return {
