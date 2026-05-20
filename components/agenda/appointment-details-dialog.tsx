@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { toast } from 'sonner'
@@ -48,6 +48,11 @@ export function AppointmentDetailsDialog({ agendamento, open, onClose, onSuccess
   const [asaasLoading, setAsaasLoading] = useState(false)
   const [asaasInvoiceUrl, setAsaasInvoiceUrl] = useState<string | null>(agendamento?.asaasInvoiceUrl ?? null)
   const [asaasStatus, setAsaasStatus] = useState<string | null>(agendamento?.asaasPaymentStatus ?? null)
+
+  useEffect(() => {
+    setAsaasInvoiceUrl(agendamento?.asaasInvoiceUrl ?? null)
+    setAsaasStatus(agendamento?.asaasPaymentStatus ?? null)
+  }, [agendamento?.id])
 
   if (!agendamento) return null
 

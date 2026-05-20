@@ -2,6 +2,7 @@
 
 import { db } from '@/lib/db'
 import { auth } from '@/lib/auth'
+import { revalidatePath } from 'next/cache'
 
 export async function salvarAsaasApiKey(
   profissionalId: string,
@@ -14,6 +15,8 @@ export async function salvarAsaasApiKey(
     where: { id: profissionalId },
     data: { asaasApiKey: apiKey || null },
   })
+
+  revalidatePath('/agenda')
 
   return { success: true }
 }
