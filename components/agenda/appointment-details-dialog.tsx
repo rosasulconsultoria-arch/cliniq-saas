@@ -48,16 +48,11 @@ export function AppointmentDetailsDialog({ agendamento, open, onClose, onSuccess
   const [asaasLoading, setAsaasLoading] = useState(false)
   const [asaasInvoiceUrl, setAsaasInvoiceUrl] = useState<string | null>(null)
   const [asaasStatus, setAsaasStatus] = useState<string | null>(null)
-  const [temAsaas, setTemAsaas] = useState(false)
 
   useEffect(() => {
     if (!agendamento) return
     setAsaasInvoiceUrl(agendamento.asaasInvoiceUrl ?? null)
     setAsaasStatus(agendamento.asaasPaymentStatus ?? null)
-    fetch(`/api/asaas/check?profissionalId=${agendamento.profissional.id}`)
-      .then(r => r.json())
-      .then(d => setTemAsaas(!!d.temAsaas))
-      .catch(() => setTemAsaas(false))
   }, [agendamento?.id])
 
   if (!agendamento) return null
@@ -206,12 +201,11 @@ export function AppointmentDetailsDialog({ agendamento, open, onClose, onSuccess
               Baixar Recibo PDF
             </Button>
 
-            {/* Asaas */}
-            {temAsaas && (
-              <>
-                <Separator />
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Cobrança Asaas</p>
+            {/* Asaas — sempre visível */}
+            <>
+              <Separator />
+              <div className="space-y-2">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Cobrança Asaas</p>
                   {asaasInvoiceUrl ? (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
@@ -258,8 +252,7 @@ export function AppointmentDetailsDialog({ agendamento, open, onClose, onSuccess
                     </Button>
                   )}
                 </div>
-              </>
-            )}
+            </>
 
             {/* Notificações */}
             <Separator />
