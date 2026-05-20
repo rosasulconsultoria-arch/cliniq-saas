@@ -12,6 +12,7 @@ export default auth((req) => {
 
   const isPublica =
     pathname.startsWith('/agendar') ||
+    pathname.startsWith('/redefinir-senha') ||
     pathname === '/login' ||
     pathname === '/esqueci-senha'
 
