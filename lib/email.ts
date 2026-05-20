@@ -60,3 +60,49 @@ export async function enviarEmailConfirmacao(data: EmailConfirmacao): Promise<vo
     console.error('[email] Falha ao enviar:', e)
   }
 }
+
+interface EmailRecuperacao {
+  email: string
+  nome: string
+  token: string
+}
+
+export async function enviarEmailRecuperacaoSenha(data: EmailRecuperacao): Promise<void> {
+  if (!resend) return
+
+  const baseUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000'
+  const link = `${baseUrl}/redefinir-senha/${data.token}`
+
+  const html = `
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f8fafc;font-family:system-ui,-apple-system,sans-serif">
+<div style="max-width:560px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.1)">
+  <div style="background:#4f46e5;padding:32px;text-align:center">
+    <div style="display:inline-block;background:rgba(255,255,255,.15);border-radius:8px;padding:8px 16px;color:#fff;font-weight:700;font-size:18px;letter-spacing:.05em">CP</div>
+  </div>
+  <div style="padding:32px">
+    <h1 style="margin:0 0 8px;font-size:22px;color:#0f172a">Recuperação de senha</h1>
+    <p style="color:#64748b;margin:0 0 24px">Olá, <strong>${data.nome}</strong>! Recebemos uma solicitação para redefinir sua senha.</p>
+    <a href="${link}" style="display:inline-block;background:#4f46e5;color:#fff;text-decoration:none;font-weight:600;font-size:15px;padding:12px 28px;border-radius:8px;margin-bottom:24px">
+      Redefinir minha senha
+    </a>
+    <p style="color:#94a3b8;font-size:13px;margin:0 0 8px">O link é válido por <strong>1 hora</strong>. Se você não solicitou isso, ignore este e-mail.</p>
+    <p style="color:#94a3b8;font-size:12px;margin:0;word-break:break-all">Ou copie: ${link}</p>
+  </div>
+</div>
+</body>
+</html>`
+
+  try {
+    await resend.emails.send({
+      from: process.env.EMAIL_FROM ?? 'noreply@clinica.com',
+      to: data.email,
+      subject: '🔑 Redefinição de senha',
+      html,
+    })
+  } catch (e) {
+    console.error('[email] Falha ao enviar recuperação:', e)
+  }
+}
