@@ -99,8 +99,8 @@ export function AppointmentDetailsDialog({ agendamento, open, onClose, onSuccess
       setAsaasInvoiceUrl(json.invoiceUrl)
       setAsaasStatus(json.status)
       toast.success('Cobrança gerada! Link pronto para enviar.')
-    } catch {
-      toast.error('Erro ao conectar com o Asaas')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Erro ao conectar com o Asaas')
     } finally {
       setAsaasLoading(false)
     }

@@ -59,28 +59,34 @@ export async function POST(req: Request) {
 
   const apiKey = ag.profissional.asaasApiKey
 
-  const cliente = await criarOuBuscarCliente(apiKey, {
-    nome: ag.paciente.nome,
-    cpf: ag.paciente.cpf,
-    email: ag.paciente.email,
-    telefone: ag.paciente.telefone,
-  })
+  try {
+    const cliente = await criarOuBuscarCliente(apiKey, {
+      nome: ag.paciente.nome,
+      cpf: ag.paciente.cpf,
+      email: ag.paciente.email,
+      telefone: ag.paciente.telefone,
+    })
 
-  const descricao = `Consulta — ${ag.profissional.user.name}`
-  const cobranca = await criarCobranca(apiKey, {
-    customerId: cliente.id,
-    valor: Number(ag.valor),
-    descricao,
-  })
+    const descricao = `Consulta — ${ag.profissional.user.name}`
+    const cobranca = await criarCobranca(apiKey, {
+      customerId: cliente.id,
+      valor: Number(ag.valor),
+      descricao,
+    })
 
-  await db.agendamento.update({
-    where: { id: agendamentoId },
-    data: {
-      asaasPaymentId: cobranca.id,
-      asaasInvoiceUrl: cobranca.invoiceUrl,
-      asaasPaymentStatus: cobranca.status,
-    },
-  })
+    await db.agendamento.update({
+      where: { id: agendamentoId },
+      data: {
+        asaasPaymentId: cobranca.id,
+        asaasInvoiceUrl: cobranca.invoiceUrl,
+        asaasPaymentStatus: cobranca.status,
+      },
+    })
 
-  return Response.json({ invoiceUrl: cobranca.invoiceUrl, status: cobranca.status })
+    return Response.json({ invoiceUrl: cobranca.invoiceUrl, status: cobranca.status })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : 'Erro ao comunicar com o Asaas'
+    console.error('[asaas] erro:', msg)
+    return Response.json({ error: msg }, { status: 500 })
+  }
 }
