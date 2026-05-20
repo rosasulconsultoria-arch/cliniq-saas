@@ -202,10 +202,8 @@ export function AppointmentDetailsDialog({ agendamento, open, onClose, onSuccess
             </Button>
 
             {/* Asaas — sempre visível */}
-            <>
-              <Separator />
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Cobrança Asaas</p>
+            <div className="border-2 border-indigo-400 rounded-lg p-3 space-y-2">
+                <p className="text-xs font-medium text-indigo-600 uppercase tracking-wide">Cobrança Asaas</p>
                   {asaasInvoiceUrl ? (
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
@@ -251,8 +249,7 @@ export function AppointmentDetailsDialog({ agendamento, open, onClose, onSuccess
                       Gerar cobrança Asaas
                     </Button>
                   )}
-                </div>
-            </>
+            </div>
 
             {/* Notificações */}
             <Separator />
