@@ -46,12 +46,18 @@ export function AppointmentDetailsDialog({ agendamento, open, onClose, onSuccess
   const [cancelarOpen, setCancelarOpen] = useState(false)
   const [whatsLink, setWhatsLink] = useState<string | null>(null)
   const [asaasLoading, setAsaasLoading] = useState(false)
-  const [asaasInvoiceUrl, setAsaasInvoiceUrl] = useState<string | null>(agendamento?.asaasInvoiceUrl ?? null)
-  const [asaasStatus, setAsaasStatus] = useState<string | null>(agendamento?.asaasPaymentStatus ?? null)
+  const [asaasInvoiceUrl, setAsaasInvoiceUrl] = useState<string | null>(null)
+  const [asaasStatus, setAsaasStatus] = useState<string | null>(null)
+  const [temAsaas, setTemAsaas] = useState(false)
 
   useEffect(() => {
-    setAsaasInvoiceUrl(agendamento?.asaasInvoiceUrl ?? null)
-    setAsaasStatus(agendamento?.asaasPaymentStatus ?? null)
+    if (!agendamento) return
+    setAsaasInvoiceUrl(agendamento.asaasInvoiceUrl ?? null)
+    setAsaasStatus(agendamento.asaasPaymentStatus ?? null)
+    fetch(`/api/asaas/check?profissionalId=${agendamento.profissional.id}`)
+      .then(r => r.json())
+      .then(d => setTemAsaas(!!d.temAsaas))
+      .catch(() => setTemAsaas(false))
   }, [agendamento?.id])
 
   if (!agendamento) return null
@@ -201,7 +207,7 @@ export function AppointmentDetailsDialog({ agendamento, open, onClose, onSuccess
             </Button>
 
             {/* Asaas */}
-            {agendamento.profissional.temAsaas && (
+            {temAsaas && (
               <>
                 <Separator />
                 <div className="space-y-2">
