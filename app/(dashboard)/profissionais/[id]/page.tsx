@@ -102,13 +102,13 @@ export default async function EditarProfissionalPage({ params }: Props) {
       </div>
 
       <Tabs defaultValue="dados">
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="dados">Dados</TabsTrigger>
-          <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
-          <TabsTrigger value="parcelamentos">Parcelamentos</TabsTrigger>
-          <TabsTrigger value="disponibilidade">Disponibilidade</TabsTrigger>
-          <TabsTrigger value="bloqueios">Bloqueios</TabsTrigger>
-          <TabsTrigger value="integracoes">Integrações</TabsTrigger>
+        <TabsList className="flex w-full overflow-x-auto h-auto flex-wrap gap-1 justify-start bg-muted p-1 rounded-lg">
+          <TabsTrigger value="dados" className="flex-shrink-0">Dados</TabsTrigger>
+          <TabsTrigger value="financeiro" className="flex-shrink-0">Financeiro</TabsTrigger>
+          <TabsTrigger value="parcelamentos" className="flex-shrink-0">Parcelamentos</TabsTrigger>
+          <TabsTrigger value="disponibilidade" className="flex-shrink-0">Disponibilidade</TabsTrigger>
+          <TabsTrigger value="bloqueios" className="flex-shrink-0">Bloqueios</TabsTrigger>
+          <TabsTrigger value="integracoes" className="flex-shrink-0">Integrações</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dados" className="space-y-4">
