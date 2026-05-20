@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Clínica',
+    title: 'Neuroconexão',
   },
   icons: {
     icon: '/logo.png',

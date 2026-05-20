@@ -2,8 +2,8 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Sistema de Gestão — Clínica',
-    short_name: 'Clínica',
+    name: 'Neuroconexão',
+    short_name: 'Neuroconexão',
     description: 'Sistema de gestão para clínica de psicologia',
     start_url: '/dashboard',
     display: 'standalone',
