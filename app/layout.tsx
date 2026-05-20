@@ -11,6 +11,16 @@ export const metadata: Metadata = {
     template: '%s — Clínica',
   },
   description: 'Sistema de gestão para clínica de psicologia',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Clínica',
+  },
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
+  },
 }
 
 export default function RootLayout({
