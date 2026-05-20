@@ -71,6 +71,7 @@ model Profissional {
   valorAluguelMensal Decimal?    @db.Decimal(10, 2)
   mesesContrato      Int?
   fotoBase64         String?
+  asaasApiKey        String?
   slugAgendamento     String      @unique
   valorConsultaPadrao Decimal?   @db.Decimal(10, 2)
   bio                String?
@@ -167,6 +168,9 @@ model Agendamento {
   taxaCartaoPerc    Decimal?          @db.Decimal(5, 2)
   confirmacaoEnviada  Boolean           @default(false)
   lembreteEnviado     Boolean           @default(false)
+  asaasPaymentId      String?
+  asaasInvoiceUrl     String?
+  asaasPaymentStatus  String?
   origem              OrigemAgendamento @default(INTERNO)
   observacoes         String?
   recorrenciaGrupoId  String?

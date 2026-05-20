@@ -13,6 +13,7 @@ import { ProfissionalForm } from '@/components/profissionais/form'
 import { DisponibilidadeTab } from '@/components/profissionais/disponibilidade-tab'
 import { BloqueioTab } from '@/components/profissionais/bloqueio-tab'
 import { ProfissionalQRCode } from '@/components/profissionais/qr-code'
+import { AsaasConfig } from '@/components/profissionais/asaas-config'
 import { ParcelamentosTab } from '@/components/parcelamentos/parcelamentos-tab'
 import { formatBRL } from '@/lib/utils'
 
@@ -101,12 +102,13 @@ export default async function EditarProfissionalPage({ params }: Props) {
       </div>
 
       <Tabs defaultValue="dados">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="dados">Dados</TabsTrigger>
           <TabsTrigger value="financeiro">Financeiro</TabsTrigger>
           <TabsTrigger value="parcelamentos">Parcelamentos</TabsTrigger>
           <TabsTrigger value="disponibilidade">Disponibilidade</TabsTrigger>
           <TabsTrigger value="bloqueios">Bloqueios</TabsTrigger>
+          <TabsTrigger value="integracoes">Integrações</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dados" className="space-y-4">
@@ -291,6 +293,21 @@ export default async function EditarProfissionalPage({ params }: Props) {
               <BloqueioTab
                 profissionalId={params.id}
                 bloqueiosIniciais={bloqueiosSerializados}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="integracoes">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Integrações</CardTitle>
+              <CardDescription>Conecte serviços externos ao perfil do profissional</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AsaasConfig
+                profissionalId={params.id}
+                apiKeyAtual={(profissional as any).asaasApiKey ?? null}
               />
             </CardContent>
           </Card>

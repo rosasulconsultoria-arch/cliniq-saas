@@ -12,7 +12,10 @@ export interface AgendamentoDisplay {
   bandeiraCartao?: string | null
   numeroParcelas?: number | null
   confirmacaoEnviada?: boolean
-  profissional: { id: string; nome: string; foto?: string | null }
+  asaasPaymentId?: string | null
+  asaasInvoiceUrl?: string | null
+  asaasPaymentStatus?: string | null
+  profissional: { id: string; nome: string; foto?: string | null; temAsaas?: boolean }
   paciente: { id: string; nome: string; email?: string | null; telefone?: string | null }
   sala: { id: string; nome: string }
 }

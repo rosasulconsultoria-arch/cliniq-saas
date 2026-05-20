@@ -42,7 +42,7 @@ export async function getAgendamentos({
   const agendamentos = await db.agendamento.findMany({
     where,
     include: {
-      profissional: { select: { id: true, fotoBase64: true, user: { select: { name: true } } } },
+      profissional: { select: { id: true, fotoBase64: true, asaasApiKey: true, user: { select: { name: true } } } },
       paciente: { select: { id: true, nome: true, email: true, telefone: true } },
       sala: { select: { id: true, nome: true } },
     },
@@ -64,7 +64,10 @@ export async function getAgendamentos({
     bandeiraCartao: a.bandeiraCartao ?? null,
     numeroParcelas: a.numeroParcelas ?? null,
     confirmacaoEnviada: a.confirmacaoEnviada ?? false,
-    profissional: { id: a.profissionalId, nome: a.profissional.user.name, foto: (a.profissional as any).fotoBase64 ?? null },
+    asaasPaymentId: a.asaasPaymentId ?? null,
+    asaasInvoiceUrl: a.asaasInvoiceUrl ?? null,
+    asaasPaymentStatus: a.asaasPaymentStatus ?? null,
+    profissional: { id: a.profissionalId, nome: a.profissional.user.name, foto: a.profissional.fotoBase64 ?? null, temAsaas: !!a.profissional.asaasApiKey },
     paciente: { id: a.pacienteId, nome: a.paciente.nome, email: a.paciente.email ?? null, telefone: a.paciente.telefone ?? null },
     sala: { id: a.salaId, nome: a.sala.nome },
   }))
