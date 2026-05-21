@@ -330,24 +330,23 @@ O sistema precisa cobrar as clínicas (tenants) recorrentemente pelo uso da plat
 
 ### Decisão recomendada
 
-**Opção A — Stripe para assinaturas SaaS + manter Asaas para cobranças de pacientes.**
+**Opção C — Asaas para assinaturas SaaS + Asaas mantido para cobranças de pacientes.**
 
-Stripe é superior em gestão de assinaturas — trials automáticos, dunning configurável, portal do cliente self-service, e relatórios de MRR/churn são funcionalidades que economizam semanas de desenvolvimento. O custo de implementação de PIX via Stripe é justificável dado o ganho em qualidade do produto de cobrança.
+O mercado-alvo são clínicas de saúde brasileiras que pagam por PIX e boleto. O Asaas tem suporte nativo a esses métodos, a equipe já conhece a API, e uma única integração reduz superfície de manutenção. O ganho prático de features avançadas do Stripe (dunning configurável, portal self-service, proration automática) não justifica o custo de implementação para os primeiros tenants.
 
-A separação é semanticamente correta:
-- **Stripe** → a plataforma Cliniq cobra a **clínica** (tenant)
-- **Asaas** → a **clínica** cobra o **paciente** (fluxo já existente, não muda)
-
-Se após validação com usuários reais o PIX/boleto for bloqueante para conversão, migrar para Pagar.me é mais simples do que o inverso (Stripe tem exportações padronizadas).
+O trial e o controle de inadimplência são gerenciados em código:
+- `trialExpiraEm` no model `Tenant` — middleware bloqueia se vencido
+- Webhook `PAYMENT_OVERDUE` do Asaas altera `statusAssinatura` para `BLOQUEADO`
+- MRR e churn calculados diretamente no banco
 
 ### Implicações práticas
 
-- Adicionar ao model `Tenant`: `stripeCustomerId`, `stripePriceId`, `stripeSubscriptionId`, `plano`, `statusAssinatura`, `trialExpiraEm`
-- Criar `lib/stripe.ts` — singleton do Stripe SDK
-- Criar routes em `app/api/stripe/webhook/route.ts` para tratar `invoice.paid`, `customer.subscription.deleted`, `customer.subscription.trial_ending`
-- Criar fluxo de onboarding: cadastro → trial 14 dias → Stripe Checkout para ativar plano
-- Middleware deve bloquear acesso ao dashboard se `statusAssinatura === 'BLOQUEADO'` e redirecionar para página de pagamento
-- Criar página `app/(dashboard)/assinatura/page.tsx` com portal Stripe via `stripe.billingPortal.sessions.create()`
+- Adicionar ao model `Tenant`: `asaasCustomerId`, `asaasSubscriptionId`, `plano`, `statusAssinatura`, `trialExpiraEm`
+- Criar `lib/asaas-saas.ts` — funções para criar cliente, criar assinatura e cancelar (separado do `lib/asaas.ts` existente que é B2C)
+- Criar `app/api/asaas/saas-webhook/route.ts` para tratar `PAYMENT_CONFIRMED`, `PAYMENT_OVERDUE`, `SUBSCRIPTION_DELETED`
+- Criar fluxo de onboarding: cadastro → trial 14 dias (controlado por `trialExpiraEm`) → Asaas Checkout para ativar plano
+- Middleware bloqueia acesso ao dashboard se `statusAssinatura === 'BLOQUEADO'` e redireciona para página de pagamento
+- Criar página `app/(dashboard)/assinatura/page.tsx` com resumo da assinatura e link para segunda via de boleto/PIX via Asaas
 
 ---
 
@@ -491,7 +490,7 @@ Opção C não deve ser oferecida — a barreira de configuração DNS é muito 
 | 1 | Multi-tenancy | Shared DB + `tenantId` em 18 tabelas | Alta (migration + schema completo) |
 | 2 | Isolamento | Prisma Client Extension + `AsyncLocalStorage` | Média (centralizado, mas afeta todas as server actions) |
 | 3 | Roteamento | Subdomínio por tenant (`*.cliniq.com.br`) | Média (middleware + DNS + Vercel Pro) |
-| 4 | Pagamento SaaS | Stripe para assinaturas + Asaas mantido para pacientes | Alta (nova integração + webhook + portal) |
+| 4 | Pagamento SaaS | Asaas para assinaturas SaaS + Asaas para pacientes (único gateway) | Média (extensão da integração existente + webhook SaaS separado) |
 | 5 | Storage | Supabase Storage com path por tenant | Baixa (remover base64, adicionar upload) |
 | 6 | E-mail | Resend único com display name por tenant (MVP) | Baixa (MVP) / Média (fase premium) |
 
