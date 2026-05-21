@@ -1,6 +1,7 @@
 'use server'
 
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
+import { withTenantAction } from '@/lib/with-tenant-action'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
@@ -22,45 +23,57 @@ const TaxaSchema = z.object({
 export type TaxaFormData = z.infer<typeof TaxaSchema>
 
 export async function criarTaxa(data: unknown): Promise<{ error?: string }> {
-  const parsed = TaxaSchema.safeParse(data)
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Dados inválidos' }
-  try {
-    await db.taxaImposto.create({ data: parsed.data })
-    revalidatePath('/financeiro/taxas')
-    return {}
-  } catch {
-    return { error: 'Erro ao criar taxa.' }
-  }
+  return withTenantAction(async () => {
+    const parsed = TaxaSchema.safeParse(data)
+    if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Dados inválidos' }
+    const db = getTenantDb()
+    try {
+      await db.taxaImposto.create({ data: parsed.data })
+      revalidatePath('/financeiro/taxas')
+      return {}
+    } catch {
+      return { error: 'Erro ao criar taxa.' }
+    }
+  })
 }
 
 export async function atualizarTaxa(id: string, data: unknown): Promise<{ error?: string }> {
-  const parsed = TaxaSchema.safeParse(data)
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Dados inválidos' }
-  try {
-    await db.taxaImposto.update({ where: { id }, data: parsed.data })
-    revalidatePath('/financeiro/taxas')
-    return {}
-  } catch {
-    return { error: 'Erro ao atualizar taxa.' }
-  }
+  return withTenantAction(async () => {
+    const parsed = TaxaSchema.safeParse(data)
+    if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Dados inválidos' }
+    const db = getTenantDb()
+    try {
+      await db.taxaImposto.update({ where: { id }, data: parsed.data })
+      revalidatePath('/financeiro/taxas')
+      return {}
+    } catch {
+      return { error: 'Erro ao atualizar taxa.' }
+    }
+  })
 }
 
 export async function deletarTaxa(id: string): Promise<{ error?: string }> {
-  try {
-    await db.taxaImposto.delete({ where: { id } })
-    revalidatePath('/financeiro/taxas')
-    return {}
-  } catch {
-    return { error: 'Erro ao excluir taxa.' }
-  }
+  return withTenantAction(async () => {
+    const db = getTenantDb()
+    try {
+      await db.taxaImposto.delete({ where: { id } })
+      revalidatePath('/financeiro/taxas')
+      return {}
+    } catch {
+      return { error: 'Erro ao excluir taxa.' }
+    }
+  })
 }
 
 export async function toggleTaxa(id: string, ativo: boolean): Promise<{ error?: string }> {
-  try {
-    await db.taxaImposto.update({ where: { id }, data: { ativo } })
-    revalidatePath('/financeiro/taxas')
-    return {}
-  } catch {
-    return { error: 'Erro ao atualizar status.' }
-  }
+  return withTenantAction(async () => {
+    const db = getTenantDb()
+    try {
+      await db.taxaImposto.update({ where: { id }, data: { ativo } })
+      revalidatePath('/financeiro/taxas')
+      return {}
+    } catch {
+      return { error: 'Erro ao atualizar status.' }
+    }
+  })
 }

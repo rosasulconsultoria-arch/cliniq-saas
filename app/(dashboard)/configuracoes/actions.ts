@@ -1,6 +1,7 @@
 'use server'
 
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
+import { withTenantAction } from '@/lib/with-tenant-action'
 import { revalidatePath } from 'next/cache'
 import { assertAdmin } from '@/lib/auth-guard'
 
@@ -39,25 +40,35 @@ async function geocodificarEndereco(data: ConfigClinicaData): Promise<{ lat: num
 }
 
 export async function salvarConfigClinica(data: ConfigClinicaData): Promise<{ error?: string }> {
-  await assertAdmin()
-  try {
-    // Geocodifica o endereço completo para obter coordenadas precisas
-    const coords = await geocodificarEndereco(data)
-    const payload = { ...data, ...(coords ? { lat: coords.lat, lng: coords.lng } : {}) }
+  return withTenantAction(async () => {
+    await assertAdmin()
+    try {
+      const coords = await geocodificarEndereco(data)
+      const payload = { ...data, ...(coords ? { lat: coords.lat, lng: coords.lng } : {}) }
 
-    await db.configClinica.upsert({
-      where: { id: 'default' },
-      update: payload,
-      create: { id: 'default', ...payload },
-    })
-    revalidatePath('/', 'layout')
-    return {}
-  } catch (e) {
-    console.error(e)
-    return { error: 'Erro ao salvar configurações.' }
-  }
+      const db = getTenantDb()
+      // ConfigClinica agora tem tenantId — não existe mais id='default' global.
+      // Buscamos a config do tenant atual e fazemos update ou create.
+      // Ajuste de unicidade: upsert por id='default' substituído por findFirst + update/create.
+      const existing = await db.configClinica.findFirst()
+      if (existing) {
+        await db.configClinica.update({ where: { id: existing.id }, data: payload })
+      } else {
+        await db.configClinica.create({ data: payload })
+      }
+
+      revalidatePath('/', 'layout')
+      return {}
+    } catch (e) {
+      console.error(e)
+      return { error: 'Erro ao salvar configurações.' }
+    }
+  })
 }
 
 export async function getConfigClinica() {
-  return db.configClinica.findUnique({ where: { id: 'default' } })
+  return withTenantAction(async () => {
+    const db = getTenantDb()
+    return db.configClinica.findFirst()
+  })
 }

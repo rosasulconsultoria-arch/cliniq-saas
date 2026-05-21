@@ -1,6 +1,7 @@
 'use server'
 
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
+import { withTenantAction } from '@/lib/with-tenant-action'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
 
@@ -16,29 +17,34 @@ const schema = z.object({
 export async function redefinirSenha(
   formData: { token: string; novaSenha: string; confirmar: string }
 ): Promise<{ success?: boolean; error?: string }> {
-  const parsed = schema.safeParse(formData)
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Dados inválidos' }
+  return withTenantAction(async () => {
+    const parsed = schema.safeParse(formData)
+    if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Dados inválidos' }
 
-  const user = await db.user.findFirst({
-    where: {
-      resetToken: parsed.data.token,
-      resetTokenExpiry: { gt: new Date() },
-    },
+    const db = getTenantDb()
+    // resetToken é @unique global — extension adiciona tenantId ao where (Opção B)
+    // Isso garante que o token só funciona no subdomínio correto do tenant
+    const user = await db.user.findFirst({
+      where: {
+        resetToken: parsed.data.token,
+        resetTokenExpiry: { gt: new Date() },
+      },
+    })
+
+    if (!user) return { error: 'Link inválido ou expirado. Solicite um novo.' }
+
+    const hash = await bcrypt.hash(parsed.data.novaSenha, 12)
+
+    await db.user.update({
+      where: { id: user.id },
+      data: {
+        passwordHash: hash,
+        resetToken: null,
+        resetTokenExpiry: null,
+        mustChangePassword: false,
+      },
+    })
+
+    return { success: true }
   })
-
-  if (!user) return { error: 'Link inválido ou expirado. Solicite um novo.' }
-
-  const hash = await bcrypt.hash(parsed.data.novaSenha, 12)
-
-  await db.user.update({
-    where: { id: user.id },
-    data: {
-      passwordHash: hash,
-      resetToken: null,
-      resetTokenExpiry: null,
-      mustChangePassword: false,
-    },
-  })
-
-  return { success: true }
 }
