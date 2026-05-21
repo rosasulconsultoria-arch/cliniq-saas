@@ -41,94 +41,42 @@ enum StatusFinanceiro {
   PAGO
 }
 
-enum PlanoTenant {
-  BASICO
-  PROFISSIONAL
-  ENTERPRISE
-}
-
-enum StatusTenant {
-  TRIAL
-  ATIVO
-  BLOQUEADO
-  CANCELADO
-}
-
-model Tenant {
-  id                  String       @id @default(cuid())
-  slug                String       @unique
-  nome                String
-  plano               PlanoTenant  @default(BASICO)
-  status              StatusTenant @default(TRIAL)
-  trialEndsAt         DateTime?
-  asaasCustomerId     String?
-  asaasSubscriptionId String?
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
-
-  users                 User[]
-  profissionais         Profissional[]
-  pacientes             Paciente[]
-  salas                 Sala[]
-  disponibilidades      Disponibilidade[]
-  bloqueios             Bloqueio[]
-  agendamentos          Agendamento[]
-  categoriasFinanceiras CategoriaFinanceira[]
-  transacoes            TransacaoFinanceira[]
-  comissoes             Comissao[]
-  parcelamentos         Parcelamento[]
-  servicos              Servico[]
-  crmTemplates          CrmTemplate[]
-  crmCampanhas          CrmCampanha[]
-  taxasImposto          TaxaImposto[]
-  despesasProfissional  DespesaProfissional[]
-  alugueis              Aluguel[]
-  configClinica         ConfigClinica[]
-}
-
 model User {
-  id                 String    @id @default(cuid())
-  tenantId           String
-  tenant             Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  name               String
-  email              String
-  passwordHash       String
-  role               Role      @default(RECEPCAO)
-  active             Boolean   @default(true)
-  mustChangePassword Boolean   @default(false)
-  resetToken         String?   @unique
-  resetTokenExpiry   DateTime?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(RECEPCAO)
+  active              Boolean  @default(true)
+  mustChangePassword  Boolean  @default(false)
+  resetToken          String?  @unique
+  resetTokenExpiry    DateTime?
+  createdAt           DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   profissional Profissional?
 
-  @@unique([email, tenantId])
-  @@index([tenantId])
   @@index([email])
   @@index([resetToken])
 }
 
 model Profissional {
-  id                  String      @id @default(cuid())
-  tenantId            String
-  tenant              Tenant      @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  userId              String      @unique
-  user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  especialidade       String
-  crp                 String?
-  tipoVinculo         TipoVinculo
-  comissaoPercentual  Decimal?    @db.Decimal(5, 2)
-  valorAluguelMensal  Decimal?    @db.Decimal(10, 2)
-  mesesContrato       Int?
-  // TODO: migrar para URL externa em fase de storage
-  fotoBase64          String?
-  asaasApiKey         String?
-  slugAgendamento     String
-  valorConsultaPadrao Decimal?    @db.Decimal(10, 2)
-  bio                 String?
-  ativo               Boolean     @default(true)
-  createdAt           DateTime    @default(now())
+  id                 String      @id @default(cuid())
+  userId             String      @unique
+  user               User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  especialidade      String
+  crp                String?
+  tipoVinculo        TipoVinculo
+  comissaoPercentual Decimal?    @db.Decimal(5, 2)
+  valorAluguelMensal Decimal?    @db.Decimal(10, 2)
+  mesesContrato      Int?
+  fotoBase64         String?
+  asaasApiKey        String?
+  slugAgendamento     String      @unique
+  valorConsultaPadrao Decimal?   @db.Decimal(10, 2)
+  bio                String?
+  ativo              Boolean     @default(true)
+  createdAt          DateTime    @default(now())
 
   disponibilidades Disponibilidade[]
   bloqueios        Bloqueio[]
@@ -139,17 +87,13 @@ model Profissional {
   despesas         DespesaProfissional[]
   parcelamentos    Parcelamento[]
 
-  @@unique([slugAgendamento, tenantId])
-  @@index([tenantId])
   @@index([slugAgendamento])
 }
 
 model Paciente {
   id             String    @id @default(cuid())
-  tenantId       String
-  tenant         Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   nome           String
-  cpf            String?
+  cpf            String?   @unique
   telefone       String?
   email          String?
   dataNascimento DateTime?
@@ -167,93 +111,77 @@ model Paciente {
 
   agendamentos Agendamento[]
 
-  @@unique([cpf, tenantId])
-  @@index([tenantId])
   @@index([cpf])
   @@index([nome])
 }
 
 model Sala {
-  id         String   @id @default(cuid())
-  tenantId   String
-  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  nome       String
-  capacidade Int      @default(1)
-  descricao  String?
-  ativa      Boolean  @default(true)
-  createdAt  DateTime @default(now())
+  id          String   @id @default(cuid())
+  nome        String   @unique
+  capacidade  Int      @default(1)
+  descricao   String?
+  ativa       Boolean  @default(true)
+  createdAt   DateTime @default(now())
 
   agendamentos Agendamento[]
-
-  @@unique([nome, tenantId])
-  @@index([tenantId])
 }
 
 model Disponibilidade {
   id             String       @id @default(cuid())
-  tenantId       String
-  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   profissionalId String
   profissional   Profissional @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
   diaSemana      Int
   horaInicio     String
   horaFim        String
 
-  @@index([tenantId])
   @@index([profissionalId])
 }
 
 model Bloqueio {
   id             String       @id @default(cuid())
-  tenantId       String
-  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   profissionalId String
   profissional   Profissional @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
   dataHoraInicio DateTime
   dataHoraFim    DateTime
   motivo         String?
 
-  @@index([tenantId])
   @@index([profissionalId])
 }
 
 model Agendamento {
-  id                 String            @id @default(cuid())
-  tenantId           String
-  tenant             Tenant            @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  profissionalId     String
-  profissional       Profissional      @relation(fields: [profissionalId], references: [id], onDelete: Restrict)
-  pacienteId         String
-  paciente           Paciente          @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
-  salaId             String
-  sala               Sala              @relation(fields: [salaId], references: [id], onDelete: Restrict)
-  dataHoraInicio     DateTime
-  dataHoraFim        DateTime
-  status             StatusAgendamento @default(AGENDADO)
-  valor              Decimal           @db.Decimal(10, 2)
-  tipoCobranca       String            @default("CONSULTA")
-  totalSessoes       Int?
-  formaPagamento     String?
-  bandeiraCartao     String?
-  numeroParcelas     Int?              @default(1)
-  taxaCartaoPerc     Decimal?          @db.Decimal(5, 2)
-  confirmacaoEnviada Boolean           @default(false)
-  lembreteEnviado    Boolean           @default(false)
-  asaasPaymentId     String?
-  asaasInvoiceUrl    String?
-  asaasPaymentStatus String?
-  origem             OrigemAgendamento @default(INTERNO)
-  observacoes        String?
-  recorrenciaGrupoId String?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
+  id             String            @id @default(cuid())
+  profissionalId String
+  profissional   Profissional      @relation(fields: [profissionalId], references: [id], onDelete: Restrict)
+  pacienteId     String
+  paciente       Paciente          @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
+  salaId         String
+  sala           Sala              @relation(fields: [salaId], references: [id], onDelete: Restrict)
+  dataHoraInicio DateTime
+  dataHoraFim    DateTime
+  status         StatusAgendamento @default(AGENDADO)
+  valor             Decimal           @db.Decimal(10, 2)
+  tipoCobranca      String            @default("CONSULTA")
+  totalSessoes      Int?
+  formaPagamento    String?
+  bandeiraCartao    String?
+  numeroParcelas    Int?              @default(1)
+  taxaCartaoPerc    Decimal?          @db.Decimal(5, 2)
+  confirmacaoEnviada  Boolean           @default(false)
+  lembreteEnviado     Boolean           @default(false)
+  asaasPaymentId      String?
+  asaasInvoiceUrl     String?
+  asaasPaymentStatus  String?
+  origem              OrigemAgendamento @default(INTERNO)
+  observacoes         String?
+  recorrenciaGrupoId  String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
   comissao      Comissao?
   transacoes    TransacaoFinanceira[]
   parcelamentos Parcelamento[]
   servicos      AgendamentoServico[]
 
-  @@index([tenantId])
   @@index([dataHoraInicio])
   @@index([profissionalId])
   @@index([recorrenciaGrupoId])
@@ -262,22 +190,16 @@ model Agendamento {
 }
 
 model CategoriaFinanceira {
-  id       String         @id @default(cuid())
-  tenantId String
-  tenant   Tenant         @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  nome     String
-  tipo     TipoFinanceiro
-  cor      String
+  id   String         @id @default(cuid())
+  nome String
+  tipo TipoFinanceiro
+  cor  String
 
   transacoes TransacaoFinanceira[]
-
-  @@index([tenantId])
 }
 
 model TransacaoFinanceira {
   id             String              @id @default(cuid())
-  tenantId       String
-  tenant         Tenant              @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   tipo           TipoFinanceiro
   categoriaId    String
   categoria      CategoriaFinanceira @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
@@ -294,7 +216,6 @@ model TransacaoFinanceira {
   observacoes    String?
   createdAt      DateTime            @default(now())
 
-  @@index([tenantId])
   @@index([data])
   @@index([tipo])
   @@index([profissionalId])
@@ -302,8 +223,6 @@ model TransacaoFinanceira {
 
 model Comissao {
   id             String           @id @default(cuid())
-  tenantId       String
-  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   profissionalId String
   profissional   Profissional     @relation(fields: [profissionalId], references: [id], onDelete: Restrict)
   agendamentoId  String           @unique
@@ -317,14 +236,11 @@ model Comissao {
   dataPagamento  DateTime?
   observacao     String?
 
-  @@index([tenantId])
   @@index([profissionalId])
 }
 
 model Parcelamento {
   id             String       @id @default(cuid())
-  tenantId       String
-  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   profissionalId String
   profissional   Profissional @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
   agendamentoId  String?
@@ -339,9 +255,8 @@ model Parcelamento {
   status         String       @default("ATIVO")
   createdAt      DateTime     @default(now())
 
-  parcelas Parcela[]
+  parcelas       Parcela[]
 
-  @@index([tenantId])
   @@index([profissionalId])
 }
 
@@ -359,13 +274,9 @@ model Parcela {
   @@index([dataVencimento])
 }
 
-// TODO: migrar para Tenant e remover em fase futura
 model ConfigClinica {
-  id          String   @id @default(cuid())
-  tenantId    String
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  id          String   @id @default("default")
   nome        String   @default("Clínica de Psicologia")
-  // TODO: migrar para URL externa em fase de storage
   logoBase64  String?
   corPrimaria String   @default("#4f46e5")
   cnpj        String?
@@ -381,23 +292,16 @@ model ConfigClinica {
   lat         Float?
   lng         Float?
   updatedAt   DateTime @updatedAt
-
-  @@index([tenantId])
 }
 
 model Servico {
   id        String   @id @default(cuid())
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  nome      String
+  nome      String   @unique
   descricao String?
   ativo     Boolean  @default(true)
   createdAt DateTime @default(now())
 
   agendamentos AgendamentoServico[]
-
-  @@unique([nome, tenantId])
-  @@index([tenantId])
 }
 
 model AgendamentoServico {
@@ -412,38 +316,28 @@ model AgendamentoServico {
 
 model CrmTemplate {
   id        String   @id @default(cuid())
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   titulo    String
   canal     String   // WHATSAPP | EMAIL
   assunto   String?
   corpo     String
   ativo     Boolean  @default(true)
   createdAt DateTime @default(now())
-
-  @@index([tenantId])
 }
 
 model CrmCampanha {
-  id           String   @id @default(cuid())
-  tenantId     String
-  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  titulo       String
-  canal        String   // WHATSAPP | EMAIL
-  mensagem     String
-  assunto      String?
-  filtros      String?  // JSON com filtros aplicados
-  status       String   @default("RASCUNHO")
-  totalEnviado Int      @default(0)
-  criadaEm     DateTime @default(now())
-
-  @@index([tenantId])
+  id         String   @id @default(cuid())
+  titulo     String
+  canal      String   // WHATSAPP | EMAIL
+  mensagem   String
+  assunto    String?
+  filtros    String?  // JSON com filtros aplicados
+  status     String   @default("RASCUNHO")
+  totalEnviado Int    @default(0)
+  criadaEm   DateTime @default(now())
 }
 
 model TaxaImposto {
   id        String   @id @default(cuid())
-  tenantId  String
-  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   nome      String
   tipo      String   // MUNICIPAL | FEDERAL | ESTADUAL
   aliquota  Decimal? @db.Decimal(5, 2)
@@ -453,14 +347,11 @@ model TaxaImposto {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@index([tenantId])
   @@index([tipo])
 }
 
 model DespesaProfissional {
   id             String           @id @default(cuid())
-  tenantId       String
-  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   profissionalId String
   profissional   Profissional     @relation(fields: [profissionalId], references: [id], onDelete: Cascade)
   descricao      String
@@ -474,15 +365,12 @@ model DespesaProfissional {
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
-  @@index([tenantId])
   @@index([profissionalId])
   @@index([data])
 }
 
 model Aluguel {
   id             String           @id @default(cuid())
-  tenantId       String
-  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   profissionalId String
   profissional   Profissional     @relation(fields: [profissionalId], references: [id], onDelete: Restrict)
   mesReferencia  DateTime         @db.Date
@@ -492,7 +380,6 @@ model Aluguel {
   dataPagamento  DateTime?
   observacao     String?
 
-  @@index([tenantId])
   @@index([profissionalId])
   @@index([mesReferencia])
 }
