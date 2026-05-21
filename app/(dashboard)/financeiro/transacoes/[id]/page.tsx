@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { format } from 'date-fns'
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { TransacaoForm } from '@/components/financeiro/transacao-form'
@@ -12,6 +12,7 @@ interface Props {
 }
 
 export default async function EditarTransacaoPage({ params }: Props) {
+  const db = getTenantDb()
   const transacao = await db.transacaoFinanceira.findUnique({ where: { id: params.id } })
   if (!transacao) notFound()
 

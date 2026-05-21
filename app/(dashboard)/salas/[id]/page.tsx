@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { SalaForm } from '@/components/salas/form'
@@ -11,6 +11,7 @@ interface Props {
 }
 
 export default async function EditarSalaPage({ params }: Props) {
+  const db = getTenantDb()
   const sala = await db.sala.findUnique({ where: { id: params.id } })
   if (!sala) notFound()
 

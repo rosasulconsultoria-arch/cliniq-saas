@@ -8,7 +8,8 @@ import dynamic from 'next/dynamic'
 import { PeriodFilter } from '@/components/dashboard/period-filter'
 import { Skeleton } from '@/components/ui/skeleton'
 import { auth } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
+import { getTenantId } from '@/lib/tenant-context'
 import { ProfissionalDashboard } from '@/components/dashboard/profissional-dashboard'
 
 const DashboardCharts = dynamic(
@@ -36,6 +37,8 @@ interface Props {
 
 export default async function DashboardPage({ searchParams }: Props) {
   const session = await auth()
+  const db = getTenantDb()
+  const tenantId = getTenantId()
 
   if (session?.user?.role === 'PROFISSIONAL') {
     const profissional = await db.profissional.findUnique({
@@ -56,9 +59,10 @@ export default async function DashboardPage({ searchParams }: Props) {
     getDashboardKPIs(inicio.toISOString(), fim.toISOString(), inicioAnterior.toISOString(), fimAnterior.toISOString()),
     getDashboardCharts(inicio.toISOString(), fim.toISOString()),
     getDashboardListas(),
+    // AgendamentoServico é SKIP_TENANT — Padrão 2: filtrar via agendamento.tenantId
     db.agendamentoServico.findMany({
       where: {
-        agendamento: { dataHoraInicio: { gte: inicio, lte: fim }, status: { notIn: ['CANCELADO'] } },
+        agendamento: { dataHoraInicio: { gte: inicio, lte: fim }, status: { notIn: ['CANCELADO'] }, tenantId },
       },
       include: { servico: { select: { nome: true } } },
     }).then(rows => {

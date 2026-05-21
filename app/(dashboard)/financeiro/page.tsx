@@ -1,6 +1,6 @@
 import { startOfMonth, endOfMonth, subMonths, format, addDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 import { KPICards } from '@/components/financeiro/kpi-cards'
 import { ReceitasDespesasChart } from '@/components/financeiro/receitas-despesas-chart'
 import { DespesasCategoriaChart } from '@/components/financeiro/despesas-categoria-chart'
@@ -29,6 +29,7 @@ export default async function FinanceiroPage({ searchParams }: Props) {
   const periodoParam = typeof sp.periodo === 'string' ? sp.periodo : 'mes'
   const { inicio, fim, meses, label } = getPeriodo(periodoParam)
   const hoje = new Date()
+  const db = getTenantDb()
 
   // KPIs + breakdown por origem
   const [receita, despesa, investimento, comissoesPend, alugueisPend, todasReceitas] = await Promise.all([

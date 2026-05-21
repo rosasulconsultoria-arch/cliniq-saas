@@ -1,7 +1,8 @@
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 import { CampanhasClient } from './client'
 
 export default async function CampanhasPage() {
+  const db = getTenantDb()
   const [campanhas, templates, servicos] = await Promise.all([
     db.crmCampanha.findMany({ orderBy: { criadaEm: 'desc' } }),
     db.crmTemplate.findMany({ where: { ativo: true }, orderBy: { titulo: 'asc' } }),

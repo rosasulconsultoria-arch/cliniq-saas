@@ -1,10 +1,11 @@
 import { startOfWeek, endOfWeek } from 'date-fns'
 import { auth } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 import { CalendarContainer } from '@/components/agenda/calendar-container'
 
 export default async function AgendaPage() {
   const session = await auth()
+  const db = getTenantDb()
   const hoje = new Date()
   const inicio = startOfWeek(hoje, { weekStartsOn: 1 })
   const fim = endOfWeek(hoje, { weekStartsOn: 1 })

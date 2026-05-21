@@ -1,5 +1,5 @@
 import { getCrmPacientes, getCrmStats } from './actions'
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -16,6 +16,7 @@ export default async function CrmPage({ searchParams }: Props) {
   const filtroCidade = typeof sp.cidade === 'string' ? sp.cidade : undefined
   const filtroServico = typeof sp.servico === 'string' ? sp.servico : undefined
 
+  const db = getTenantDb()
   const [pacientes, stats, servicos] = await Promise.all([
     getCrmPacientes({ cidade: filtroCidade, servicoId: filtroServico }),
     getCrmStats(),

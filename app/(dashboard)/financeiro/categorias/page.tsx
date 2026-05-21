@@ -1,7 +1,8 @@
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 import { CategoriaSection } from '@/components/financeiro/categoria-section'
 
 export default async function CategoriasPage() {
+  const db = getTenantDb()
   const categorias = await db.categoriaFinanceira.findMany({ orderBy: [{ tipo: 'asc' }, { nome: 'asc' }] })
 
   const receitas = categorias.filter(c => c.tipo === 'RECEITA')

@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TablePagination } from '@/components/table-pagination'
@@ -26,6 +26,7 @@ export default async function ComissoesPage({ searchParams }: Props) {
     ...(statusParam && statusParam !== 'todos' ? { status: statusParam } : {}),
   }
 
+  const db = getTenantDb()
   const [comissoes, total, pendentesTotal] = await Promise.all([
     db.comissao.findMany({
       where,

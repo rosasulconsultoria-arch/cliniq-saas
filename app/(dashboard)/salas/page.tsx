@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { Plus, Pencil, DoorOpen } from 'lucide-react'
 import { startOfMonth, endOfMonth } from 'date-fns'
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -28,6 +28,7 @@ export default async function SalasPage({ searchParams }: Props) {
   const inicio = startOfMonth(new Date())
   const fim = endOfMonth(new Date())
 
+  const db = getTenantDb()
   const [dados, total] = await Promise.all([
     db.sala.findMany({
       where,

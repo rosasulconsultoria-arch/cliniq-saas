@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { PacienteForm } from '@/components/pacientes/form'
@@ -13,6 +13,7 @@ interface Props {
 }
 
 export default async function EditarPacientePage({ params }: Props) {
+  const db = getTenantDb()
   const paciente = await db.paciente.findUnique({ where: { id: params.id } })
   if (!paciente) notFound()
 

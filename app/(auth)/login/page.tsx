@@ -1,6 +1,6 @@
 import { type Metadata } from 'next'
 import { LoginForm } from '@/components/auth/login-form'
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 
 export const metadata: Metadata = { title: 'Login' }
 
@@ -9,7 +9,8 @@ interface Props {
 }
 
 export default async function LoginPage({ searchParams }: Props) {
-  const config = await db.configClinica.findUnique({ where: { id: 'default' } })
+  const db = getTenantDb()
+  const config = await db.configClinica.findFirst()
   const nome = config?.nome ?? 'Clínica de Psicologia'
   const logo = config?.logoBase64 ?? null
   const cor = config?.corPrimaria ?? '#4f46e5'

@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Button } from '@/components/ui/button'
@@ -22,6 +22,7 @@ interface Props {
 }
 
 export default async function EditarProfissionalPage({ params }: Props) {
+  const db = getTenantDb()
   const [profissional, comissoes, alugueis, parcelamentos] = await Promise.all([
     db.profissional.findUnique({
       where: { id: params.id },

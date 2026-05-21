@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { TransacaoForm } from '@/components/financeiro/transacao-form'
@@ -18,6 +18,7 @@ export default async function NovaTransacaoPage({ searchParams }: Props) {
 
   const backHref = tipo === 'RECEITA' ? '/financeiro/receitas' : tipo === 'DESPESA' ? '/financeiro/despesas' : '/financeiro/investimentos'
 
+  const db = getTenantDb()
   const [categorias, profissionais] = await Promise.all([
     db.categoriaFinanceira.findMany({ orderBy: [{ tipo: 'asc' }, { nome: 'asc' }] }),
     db.profissional.findMany({ where: { ativo: true }, include: { user: { select: { name: true } } }, orderBy: { user: { name: 'asc' } } }),

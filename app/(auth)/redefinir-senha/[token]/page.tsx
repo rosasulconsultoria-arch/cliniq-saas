@@ -1,4 +1,4 @@
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import { RedefinirSenhaForm } from './form'
 import type { Metadata } from 'next'
@@ -11,7 +11,7 @@ interface Props {
 
 export default async function RedefinirSenhaPage({ params }: Props) {
   const { token } = await params
-
+  const db = getTenantDb()
   const user = await db.user.findFirst({
     where: {
       resetToken: token,

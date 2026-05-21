@@ -1,5 +1,5 @@
 import { auth } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { ConfigForm } from '@/components/configuracoes/config-form'
@@ -8,8 +8,9 @@ export default async function ConfiguracoesPage() {
   const session = await auth()
   const user = session?.user
 
-  const config = await db.configClinica.findUnique({ where: { id: 'default' } }) ?? {
-    id: 'default', nome: 'Clínica de Psicologia', logoBase64: null, corPrimaria: '#4f46e5',
+  const db = getTenantDb()
+  const config = await db.configClinica.findFirst() ?? {
+    id: '', nome: 'Clínica de Psicologia', logoBase64: null, corPrimaria: '#4f46e5',
     cnpj: null, endereco: null, numero: null, complemento: null, bairro: null,
     cidade: null, estado: null, cep: null, telefone: null, email: null,
     updatedAt: new Date(),

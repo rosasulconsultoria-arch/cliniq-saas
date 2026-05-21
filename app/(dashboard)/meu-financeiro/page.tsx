@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { auth } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import { format, startOfMonth } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -17,6 +17,7 @@ export default async function MeuFinanceiroPage() {
   const session = await auth()
   if (session?.user?.role !== 'PROFISSIONAL') redirect('/dashboard')
 
+  const db = getTenantDb()
   const profissional = await db.profissional.findUnique({
     where: { userId: session.user.id! },
   })

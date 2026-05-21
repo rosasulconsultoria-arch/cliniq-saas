@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { Plus, Pencil, Users } from 'lucide-react'
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -37,6 +37,7 @@ export default async function UsuariosPage({ searchParams }: Props) {
     ...(roleFilter ? { role: roleFilter as any } : {}),
   }
 
+  const db = getTenantDb()
   const [dados, total] = await Promise.all([
     db.user.findMany({
       where,

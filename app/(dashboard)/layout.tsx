@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 import { DashboardShell } from '@/components/layout/dashboard-shell'
 
 export default async function DashboardLayout({
@@ -18,8 +18,8 @@ export default async function DashboardLayout({
     redirect('/trocar-senha')
   }
 
-  // TODO: aplicar withTenantAction + getTenantDb() — refatoração no Prompt 1.6
-  const config = await db.configClinica.findUnique({ where: { id: 'default' } })
+  const db = getTenantDb()
+  const config = await db.configClinica.findFirst()
 
   return (
     <DashboardShell

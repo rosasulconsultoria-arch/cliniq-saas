@@ -1,4 +1,4 @@
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 import { auth } from '@/lib/auth'
 import { seedServicosSeNecessario } from './actions'
 import { ServicosClient } from './client'
@@ -8,6 +8,7 @@ export default async function ServicosPage() {
   const session = await auth()
   const isAdmin = session?.user?.role === 'ADMIN'
 
+  const db = getTenantDb()
   const servicos = await db.servico.findMany({
     orderBy: { nome: 'asc' },
     include: { _count: { select: { agendamentos: true } } },

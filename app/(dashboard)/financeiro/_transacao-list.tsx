@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Plus, Pencil } from 'lucide-react'
 import { startOfMonth, endOfMonth, parse, format, isValid } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -48,6 +48,7 @@ export async function TransacaoList({ tipo, searchParams }: Props) {
     ...(q ? { descricao: { contains: q, mode: 'insensitive' as const } } : {}),
   }
 
+  const db = getTenantDb()
   const [transacoes, total, categorias, totalValor] = await Promise.all([
     db.transacaoFinanceira.findMany({
       where,

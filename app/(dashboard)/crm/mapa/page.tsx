@@ -1,5 +1,5 @@
 import { getCrmPacientes } from '../actions'
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 import dynamic from 'next/dynamic'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -19,9 +19,10 @@ const CrmMapa = dynamic(
 )
 
 export default async function CrmMapaPage() {
+  const db = getTenantDb()
   const [pacientes, config] = await Promise.all([
     getCrmPacientes(),
-    db.configClinica.findUnique({ where: { id: 'default' } }),
+    db.configClinica.findFirst(),
   ])
 
   return (
