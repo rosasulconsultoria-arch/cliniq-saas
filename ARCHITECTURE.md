@@ -198,12 +198,27 @@ O middleware Next.js resolve o tenant pelo subdomínio e inicia o contexto. O RL
 
 ### Implicações práticas
 
-- Criar `lib/tenant-db.ts` — função `getTenantDb()` que retorna `db.$extends(...)` com tenantId do contexto
-- Criar `lib/tenant-context.ts` — `AsyncLocalStorage` para propagação
-- Atualizar `middleware.ts` — resolver tenant pelo host, armazenar no contexto e em header `x-tenant-id`
+- `lib/tenant-context.ts` — `AsyncLocalStorage` com `getTenantId()`, `runWithTenant()`, `runWithoutTenant()`
+- `lib/prisma.ts` — `getTenantDb()` que retorna `db.$extends(...)` com injeção automática de `tenantId`
+- `lib/db.ts` — mantido com o cliente Prisma base (sem tenant); usado diretamente apenas por `lib/prisma.ts` e scripts
+- Atualizar `middleware.ts` — resolver tenant pelo host, armazenar no contexto com `runWithTenant()`
 - Atualizar todas as server actions para usar `getTenantDb()` no lugar de `db` diretamente
 - Atualizar `lib/auth.ts` — busca de usuário no `authorize` precisa filtrar por tenant (lido do host da request)
 - A sessão NextAuth precisa incluir `tenantId` no token JWT
+
+### Trade-offs conhecidos
+
+#### `findUnique` → injeção de `tenantId` no `where` (Opção B)
+
+**Problema:** O tipo TypeScript de `findUnique.where` aceita apenas combinações de campos únicos definidos no schema. Injetar `tenantId` quebraria a verificação de tipos em código de aplicação (Opção A — descartada).
+
+**Decisão adotada (Opção B):** A extensão Prisma intercepta `findUnique` e `findUniqueOrThrow` e injeta `tenantId` no `where`. Em nível SQL, o comportamento é idêntico a um `findFirst` com filtro adicional: `WHERE campo_unico = ? AND tenant_id = ?`. A unicidade dos campos originais (UUID/cuid gerados globalmente) garante que no máximo 1 linha satisfaça a condição por tenant.
+
+**Por que funciona corretamente:** Um agendamento com `id = 'cld_xyz'` só existe em um tenant. Mesmo que o filtro adicional `AND tenant_id = 'tenant-a'` seja aplicado, o resultado é o mesmo — o único registro com aquele id pertencente ao tenant correto. Se o id pertencer a outro tenant, 0 linhas são retornadas, protegendo contra acesso cross-tenant.
+
+**Único ponto de type escape no codebase:** `lib/prisma.ts`, na conversão de `args as GenericArgs`. Confinado à infraestrutura; código de aplicação (server actions, rotas) usa os tipos Prisma normais sem nenhuma asserção.
+
+**Limitação conhecida:** `count`, `aggregate` e `groupBy` também recebem o filtro `where: { tenantId }`. Essas operações sempre operam sobre dados do tenant ativo — comportamento correto e intencional.
 
 ---
 
