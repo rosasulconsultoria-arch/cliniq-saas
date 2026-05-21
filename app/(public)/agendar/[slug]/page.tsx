@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 import { BookingFlow } from '@/components/booking/booking-flow'
 
 interface Props {
@@ -11,7 +11,8 @@ function getInitials(name: string) {
 }
 
 export async function generateMetadata({ params }: Props) {
-  const profissional = await db.profissional.findUnique({
+  const db = getTenantDb()
+  const profissional = await db.profissional.findFirst({
     where: { slugAgendamento: params.slug },
     include: { user: { select: { name: true } } },
   })
@@ -23,15 +24,20 @@ export async function generateMetadata({ params }: Props) {
 }
 
 export default async function AgendamentoPublicoPage({ params }: Props) {
+  const db = getTenantDb()
+
+  // findFirst com extension injeta tenantId automaticamente.
+  // Se o slug pertencer a profissional de outro tenant, retorna null → 404.
+  // Proteção cross-tenant: profissional do TenantA não é encontrado via subdomínio do TenantB.
   const [profissional, config] = await Promise.all([
-    db.profissional.findUnique({
+    db.profissional.findFirst({
       where: { slugAgendamento: params.slug },
       include: {
         user: { select: { name: true } },
         disponibilidades: true,
       },
     }),
-    db.configClinica.findUnique({ where: { id: 'default' } }),
+    db.configClinica.findFirst(),
   ])
 
   if (!profissional || !profissional.ativo) notFound()

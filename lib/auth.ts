@@ -18,7 +18,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: 'Email', type: 'email' },
         password: { label: 'Senha', type: 'password' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         try {
           const parsed = credenciaisSchema.safeParse(credentials)
           if (!parsed.success) {
@@ -26,12 +26,27 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return null
           }
 
-          const usuario = await db.user.findUnique({
-            where: { email: parsed.data.email },
+          // Resolve tenant pelo subdomínio — injetado pelo middleware via x-tenant-slug.
+          // Isso garante que admin da Clínica A não pode autenticar com email da Clínica B.
+          const slug = request.headers.get('x-tenant-slug')
+          if (!slug) {
+            console.error('[auth] x-tenant-slug ausente — middleware não configurado?')
+            return null
+          }
+
+          const tenant = await db.tenant.findUnique({ where: { slug } })
+          if (!tenant) {
+            console.error('[auth] tenant não encontrado para slug:', slug)
+            return null
+          }
+
+          // Busca por email + tenantId — email é único APENAS dentro do tenant
+          const usuario = await db.user.findFirst({
+            where: { email: parsed.data.email, tenantId: tenant.id },
           })
 
           if (!usuario) {
-            console.error('[auth] usuário não encontrado:', parsed.data.email)
+            console.error('[auth] usuário não encontrado:', parsed.data.email, 'tenant:', slug)
             return null
           }
 
@@ -46,13 +61,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return null
           }
 
-          console.log('[auth] login OK:', parsed.data.email)
+          console.log('[auth] login OK:', parsed.data.email, 'tenant:', slug)
           return {
             id: usuario.id,
             name: usuario.name,
             email: usuario.email,
             role: usuario.role,
             mustChangePassword: usuario.mustChangePassword,
+            tenantId: usuario.tenantId,
           }
         } catch (e) {
           console.error('[auth] erro no authorize:', e)

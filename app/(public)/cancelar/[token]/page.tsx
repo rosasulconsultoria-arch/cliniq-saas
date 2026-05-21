@@ -4,7 +4,7 @@ import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import { verificarTokenCancelamento } from '@/lib/tokens'
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 import { CancelButton } from './_cancel-button'
 
 interface Props {
@@ -28,6 +28,7 @@ export default async function CancelarAgendamentoPage({ params }: Props) {
     )
   }
 
+  const db = getTenantDb()
   const agendamento = await db.agendamento.findUnique({
     where: { id: agendamentoId },
     include: {

@@ -276,3 +276,58 @@ describe('Cenário 6 — withTenantAction como guarda obrigatório de Server Act
     expect(resultados[1]).toBe('tenant-clinica-b')
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cenário 7 — Proteção cross-tenant no login (lib/auth.ts)
+//
+// Admin da Clínica A não pode autenticar via subdomínio da Clínica B.
+// A busca de usuário filtra por email + tenantId — não só por email global.
+// ─────────────────────────────────────────────────────────────────────────────
+describe('Cenário 7 — Proteção cross-tenant no login', () => {
+  it('applyTenantToArgs em findFirst injeta tenantId para busca de usuário por email', () => {
+    // Simula o que lib/auth.ts faz: db.user.findFirst({ where: { email, tenantId } })
+    // A extension injeta tenantId automaticamente — este teste garante que o where
+    // recebe o tenantId correto, impedindo colisão entre tenants com mesmo email.
+    const result = applyTenantToArgs(
+      'findFirst',
+      { where: { email: 'admin@clinica.com' } },
+      'tenant-clinica-a'
+    )
+    expect(result.where).toEqual({
+      email: 'admin@clinica.com',
+      tenantId: 'tenant-clinica-a',
+    })
+  })
+
+  it('mesmo email em tenants diferentes gera queries isoladas', () => {
+    const queryClinicaA = applyTenantToArgs(
+      'findFirst',
+      { where: { email: 'shared@email.com' } },
+      'tenant-a'
+    )
+    const queryClinicaB = applyTenantToArgs(
+      'findFirst',
+      { where: { email: 'shared@email.com' } },
+      'tenant-b'
+    )
+
+    // Mesmo email, tenantIds diferentes — queries completamente diferentes no banco
+    expect(queryClinicaA.where?.tenantId).toBe('tenant-a')
+    expect(queryClinicaB.where?.tenantId).toBe('tenant-b')
+    expect(queryClinicaA.where?.tenantId).not.toBe(queryClinicaB.where?.tenantId)
+  })
+
+  it('contexto de tenant errado retornaria resultado diferente (isolamento garantido)', () => {
+    // Se o authorize de tenant-b tentar encontrar usuário de tenant-a:
+    // WHERE email = 'admin@a.com' AND tenantId = 'tenant-b' → 0 rows → login recusado
+    const queryComTenantErrado = applyTenantToArgs(
+      'findFirst',
+      { where: { email: 'admin@clinica-a.com' } },
+      'tenant-b' // tenant errado — simula subdomínio de B tentando achar usuário de A
+    )
+    // A query filtra por tenant-b, não encontraria o usuário de tenant-a
+    expect(queryComTenantErrado.where?.tenantId).toBe('tenant-b')
+    expect(queryComTenantErrado.where?.email).toBe('admin@clinica-a.com')
+    // No banco real: WHERE email = 'admin@clinica-a.com' AND tenantId = 'tenant-b' → null
+  })
+})
