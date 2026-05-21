@@ -1,3 +1,6 @@
+// Schema multi-tenant — ver ARCHITECTURE.md § "Padrões obrigatórios para queries multi-tenant"
+// para os 5 padrões que DEVEM ser seguidos em todo código novo que acessa o banco.
+
 generator client {
   provider = "prisma-client-js"
 }

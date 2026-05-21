@@ -532,6 +532,130 @@ await db.parcela.findMany({
 
 ---
 
+## Padrões obrigatórios para queries multi-tenant
+
+Estes padrões foram identificados durante a refatoração multi-tenant (Lotes 1-3) e DEVEM ser seguidos em todo código novo que acessa o banco. Violações criam vazamentos de dados entre tenants — bugs silenciosos e de difícil rastreamento.
+
+---
+
+### Padrão 1 — `$queryRaw` e `$executeRaw`: tenantId explícito obrigatório
+
+A Prisma Client Extension intercepta operações do Prisma Client, mas **NÃO intercepta SQL bruto**. Toda query raw deve incluir filtro explícito por `tenantId`.
+
+```typescript
+// ❌ ERRADO — retorna dados de todos os tenants
+const resultado = await db.$queryRaw`
+  SELECT cidade, COUNT(*) FROM "Paciente"
+  WHERE ativo = true GROUP BY cidade
+`
+
+// ✅ CORRETO — filtra pelo tenant da request
+const tenantId = getTenantId()
+const resultado = await db.$queryRaw`
+  SELECT cidade, COUNT(*) FROM "Paciente"
+  WHERE ativo = true AND "tenantId" = ${tenantId}
+  GROUP BY cidade
+`
+// Nota: Prisma tagged templates tratam ${tenantId} como parâmetro seguro (sem SQL injection)
+```
+
+---
+
+### Padrão 2 — `AgendamentoServico` (SKIP_TENANT): filtrar via `agendamento.tenantId`
+
+`AgendamentoServico` não tem `tenantId` direto. A Extension pula a injeção. Toda query deve filtrar via relacionamento.
+
+```typescript
+// ❌ ERRADO — retorna registros de todos os tenants
+await db.agendamentoServico.groupBy({
+  by: ['servicoId'],
+  _count: { servicoId: true },
+})
+
+// ✅ CORRETO — filtra via agendamento que tem tenantId
+const tenantId = getTenantId()
+await db.agendamentoServico.groupBy({
+  by: ['servicoId'],
+  where: { agendamento: { tenantId } },
+  _count: { servicoId: true },
+})
+```
+
+---
+
+### Padrão 3 — `Parcela` (SKIP_TENANT): filtrar via `parcelamento.tenantId`
+
+`Parcela` não tem `tenantId` direto (ver `NOTE` no `schema.prisma`). A Extension pula a injeção. Toda query deve usar o cliente `db` puro com filtro explícito via `parcelamento`.
+
+```typescript
+// ❌ ERRADO — retorna parcelas de todos os tenants
+await db.parcela.findMany({
+  where: { status: 'PENDENTE' },
+})
+
+// ✅ CORRETO — filtra via parcelamento que tem tenantId
+const tenantId = getTenantId()
+await db.parcela.findMany({
+  where: {
+    status: 'PENDENTE',
+    parcelamento: { status: 'ATIVO', tenantId },
+  },
+})
+```
+
+---
+
+### Padrão 4 — Campos `@@unique([campo, tenantId])`: usar `findFirst`, não `findUnique`
+
+Campos que foram convertidos de `@unique` global para `@@unique([campo, tenantId])` **não podem ser usados em `findUnique`** — o Prisma exige a combinação completa do unique composto no `where`. Use `findFirst`; a Extension injeta `tenantId` automaticamente.
+
+Campos afetados:
+
+| Modelo | Campo | Constraint |
+|---|---|---|
+| `User` | `email` | `@@unique([email, tenantId])` |
+| `Profissional` | `slugAgendamento` | `@@unique([slugAgendamento, tenantId])` |
+| `Paciente` | `cpf` | `@@unique([cpf, tenantId])` |
+| `Sala` | `nome` | `@@unique([nome, tenantId])` |
+| `Servico` | `nome` | `@@unique([nome, tenantId])` |
+
+```typescript
+// ❌ ERRADO — findUnique exige o compound {email, tenantId} no where
+const user = await db.user.findUnique({ where: { email } })
+
+// ✅ CORRETO — findFirst aceita qualquer where; Extension injeta tenantId
+const db = getTenantDb()
+const user = await db.user.findFirst({ where: { email } })
+// SQL gerado: WHERE email = ? AND tenantId = ?
+```
+
+---
+
+### Padrão 5 — `$transaction`: tenant funciona automaticamente no `tx`
+
+Dentro do callback de `$transaction`, o parâmetro `tx` é o **cliente estendido** (não o cliente bruto). A injeção de `tenantId` pela Extension funciona em todas as operações dentro da transação. Não é necessário passar `tenantId` manualmente.
+
+```typescript
+// ❌ ERRADO — tenantId passado manualmente é redundante (e confuso)
+const db = getTenantDb()
+await db.$transaction(async (tx) => {
+  await tx.comissao.create({
+    data: { ...dados, tenantId: getTenantId() }, // desnecessário
+  })
+})
+
+// ✅ CORRETO — Extension injeta tenantId automaticamente no tx
+const db = getTenantDb()
+await db.$transaction(async (tx) => {
+  await tx.comissao.create({ data: dados }) // tenantId injetado pela Extension
+  await tx.transacaoFinanceira.create({ data: outrosDados }) // idem
+})
+```
+
+**Exceção:** `$queryRaw` dentro de `$transaction` também não é interceptado — aplica o Padrão 1 mesmo dentro de transações.
+
+---
+
 ## Resumo das Decisões
 
 | # | Tema | Decisão Recomendada | Complexidade de Implementação |
