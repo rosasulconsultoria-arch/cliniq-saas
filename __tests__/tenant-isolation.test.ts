@@ -209,3 +209,70 @@ describe('Cobertura adicional — create, createMany, upsert', () => {
     expect(result.where).toEqual({ id: 'algum-id', tenantId: 'tenant-a' })
   })
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Cenário 6 — withTenantAction como guarda obrigatório de Server Actions
+//
+// Prova que uma Server Action que acessa dados tenant-scoped SEM withTenantAction
+// falha de forma explícita (não silenciosa). A falha deve ser uma exceção clara,
+// não um vazamento de dados ou um resultado vazio sem aviso.
+//
+// Ver docs/server-actions-pattern.md para o padrão correto de uso.
+// ─────────────────────────────────────────────────────────────────────────────
+describe('Cenário 6 — withTenantAction como guarda obrigatório de Server Actions', () => {
+  it('Server Action sem withTenantAction: getTenantId() lança erro explícito', async () => {
+    // Simula uma server action que chama getTenantDb() sem contexto de tenant.
+    // getTenantDb() → getTenantId() → lança '[TenantContext]...'
+    // O erro é explícito e rastreável, não um vazamento silencioso.
+    async function serverActionSemGuarda() {
+      // Esta seria a chamada real: const prisma = getTenantDb()
+      // Testamos getTenantId() diretamente (é exatamente o que getTenantDb() chama)
+      return getTenantId()
+    }
+
+    await expect(serverActionSemGuarda()).rejects.toThrow('[TenantContext]')
+  })
+
+  it('Server Action sem withTenantAction: runWithoutTenant também não dá acesso ao tenant', async () => {
+    // runWithoutTenant é para seeds/scripts — não fornece tenantId real
+    async function serverActionComRunWithoutTenant() {
+      return runWithoutTenant(() => getTenantId())
+    }
+
+    await expect(serverActionComRunWithoutTenant()).rejects.toThrow('[TenantContext]')
+  })
+
+  it('withTenantAction manual via runWithTenant funciona como esperado', async () => {
+    // Simula o que withTenantAction faz internamente após resolver o tenant:
+    // runWithTenant(tenantId, callback)
+    // Prova que o padrão correto funciona end-to-end
+    const resultado = await new Promise<string>((resolve, reject) => {
+      try {
+        runWithTenant('tenant-production', () => {
+          // Dentro do contexto: getTenantId() funciona
+          resolve(getTenantId())
+        })
+      } catch (e) {
+        reject(e)
+      }
+    })
+
+    expect(resultado).toBe('tenant-production')
+  })
+
+  it('contextos de Server Actions concorrentes não interferem entre si', async () => {
+    // Simula duas server actions rodando "simultaneamente" com tenants diferentes.
+    // AsyncLocalStorage garante isolamento mesmo com execução concorrente.
+    const resultados = await Promise.all([
+      new Promise<string>((resolve) =>
+        runWithTenant('tenant-clinica-a', () => resolve(getTenantId()))
+      ),
+      new Promise<string>((resolve) =>
+        runWithTenant('tenant-clinica-b', () => resolve(getTenantId()))
+      ),
+    ])
+
+    expect(resultados[0]).toBe('tenant-clinica-a')
+    expect(resultados[1]).toBe('tenant-clinica-b')
+  })
+})

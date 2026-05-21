@@ -18,6 +18,7 @@ export default async function DashboardLayout({
     redirect('/trocar-senha')
   }
 
+  // TODO: aplicar withTenantAction + getTenantDb() — refatoração no Prompt 1.6
   const config = await db.configClinica.findUnique({ where: { id: 'default' } })
 
   return (
