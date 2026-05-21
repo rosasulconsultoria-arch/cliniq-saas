@@ -1,7 +1,9 @@
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 import { startOfMonth, endOfMonth, subDays } from 'date-fns'
 
 export async function getDashboardProfissional(profissionalId: string) {
+  const db = getTenantDb()
+
   const hoje = new Date()
   const inicioMes = startOfMonth(hoje)
   const fimMes = endOfMonth(hoje)

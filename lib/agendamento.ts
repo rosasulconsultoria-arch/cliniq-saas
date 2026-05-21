@@ -1,10 +1,11 @@
-import { db } from '@/lib/db'
+import { getTenantDb } from '@/lib/prisma'
 
 export async function getHorariosDisponiveis(
   profissionalId: string,
   data: string // 'YYYY-MM-DD'
 ): Promise<string[]> {
-  // Parse the date preserving local time
+  const db = getTenantDb()
+
   const [ano, mes, dia] = data.split('-').map(Number)
   const dataObj = new Date(ano, mes - 1, dia)
   const diaSemana = dataObj.getDay()
@@ -68,6 +69,8 @@ export async function getHorariosDisponiveis(
 }
 
 export async function getSalaDisponivel(inicio: Date, fim: Date): Promise<string | null> {
+  const db = getTenantDb()
+
   const salas = await db.sala.findMany({ where: { ativa: true }, orderBy: { nome: 'asc' } })
 
   for (const sala of salas) {

@@ -345,6 +345,8 @@ model Parcelamento {
   @@index([profissionalId])
 }
 
+// NOTE: tabela sem tenantId direto. Isolamento garantido via Parcelamento.tenantId.
+// Toda query precisa filtrar explicitamente via where: { parcelamento: { tenantId } }.
 model Parcela {
   id             String       @id @default(cuid())
   parcelamentoId String

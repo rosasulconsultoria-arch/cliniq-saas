@@ -1,11 +1,15 @@
 import { db } from '@/lib/db'
-import { startOfMonth, endOfMonth } from 'date-fns'
+import { getTenantDb } from '@/lib/prisma'
+import { getTenantId } from '@/lib/tenant-context'
 
 export async function getContasAReceber() {
+  const prisma = getTenantDb()
+  // Parcela não tem tenantId direto — filtrada via parcelamento.tenantId
+  const tenantId = getTenantId()
+
   const [agendamentosPendentes, comissoesPendentes, alugueisPendentes, receitasPendentes, parcelasPendentes] =
     await Promise.all([
-      // Atendimentos agendados/confirmados (futura receita)
-      db.agendamento.findMany({
+      prisma.agendamento.findMany({
         where: { status: { in: ['AGENDADO', 'CONFIRMADO'] } },
         include: {
           profissional: { include: { user: { select: { name: true } } } },
@@ -13,8 +17,7 @@ export async function getContasAReceber() {
         },
         orderBy: { dataHoraInicio: 'asc' },
       }),
-      // Comissões que profissionais devem à clínica
-      db.comissao.findMany({
+      prisma.comissao.findMany({
         where: { status: 'PENDENTE' },
         include: {
           profissional: { include: { user: { select: { name: true } } } },
@@ -22,23 +25,21 @@ export async function getContasAReceber() {
         },
         orderBy: { agendamento: { dataHoraInicio: 'desc' } },
       }),
-      // Aluguéis que profissionais devem à clínica
-      db.aluguel.findMany({
+      prisma.aluguel.findMany({
         where: { status: 'PENDENTE' },
         include: {
           profissional: { include: { user: { select: { name: true } } } },
         },
         orderBy: { mesReferencia: 'desc' },
       }),
-      // Receitas lançadas mas ainda pendentes
-      db.transacaoFinanceira.findMany({
+      prisma.transacaoFinanceira.findMany({
         where: { tipo: 'RECEITA', status: 'PENDENTE' },
         include: { categoria: { select: { nome: true } } },
         orderBy: { data: 'desc' },
       }),
-      // Parcelas de cartão pendentes
+      // Parcela não tem tenantId — isolamento garantido via parcelamento.tenantId
       db.parcela.findMany({
-        where: { status: 'PENDENTE', parcelamento: { status: 'ATIVO' } },
+        where: { status: 'PENDENTE', parcelamento: { status: 'ATIVO', tenantId } },
         include: {
           parcelamento: {
             include: { profissional: { include: { user: { select: { name: true } } } } },

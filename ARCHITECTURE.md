@@ -498,6 +498,40 @@ Opção C não deve ser oferecida — a barreira de configuração DNS é muito 
 
 ---
 
+## Decisões de Performance
+
+### Cache de dashboard e relatórios — `unstable_cache` removido (2026-05-21)
+
+**Contexto:** `lib/dashboard.ts` e `lib/relatorios.ts` usavam `unstable_cache` do Next.js para cachear resultados de queries pesadas. Durante a refatoração multi-tenant (Lote 2), identificou-se que a chave de cache não incluía `tenantId` — o que causaria vazamento de dados entre tenants em produção (Tenant A receberia dados cacheados do Tenant B com o mesmo período de datas).
+
+**Decisão:** remover `unstable_cache` de todas as funções de dashboard e relatórios. As funções voltaram a ser `async` puras sem cache.
+
+**Justificativa:**
+- Isolamento de dados é não-negociável; performance é negociável
+- Com 1-50 tenants e PostgreSQL com índice em `tenantId`, queries de dashboard ficam abaixo de 100ms
+- O cache de 300s gerava problema de UX: usuário criava agendamento e o dashboard não atualizava por 5 minutos
+- Menos código para manter e menos risco de regressão nos lotes seguintes
+
+**Caminho futuro:** quando o tráfego justificar, reintroduzir cache com `tenantId` como parâmetro explícito (e portanto como parte da chave de cache). Marcado com `// TODO(performance)` em cada função afetada.
+
+### Isolamento de `Parcela` via `parcelamento.tenantId` (2026-05-21)
+
+**Contexto:** o modelo `Parcela` não tem `tenantId` direto (acessado sempre via `Parcelamento`). A Prisma Client Extension detecta `model = 'Parcela'` e pula a injeção automática de `tenantId`.
+
+**Decisão:** queries em `Parcela` usam o cliente `db` puro + filtro explícito `where: { parcelamento: { tenantId } }`, obtendo `tenantId` via `getTenantId()`.
+
+**Padrão obrigatório:**
+```typescript
+const tenantId = getTenantId()
+await db.parcela.findMany({
+  where: { ..., parcelamento: { status: 'ATIVO', tenantId } }
+})
+```
+
+**Nota no schema:** comentário `NOTE` adicionado ao model `Parcela` em `schema.prisma` como lembrete para futuros desenvolvedores.
+
+---
+
 ## Resumo das Decisões
 
 | # | Tema | Decisão Recomendada | Complexidade de Implementação |

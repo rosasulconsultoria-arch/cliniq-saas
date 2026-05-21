@@ -1,59 +1,58 @@
 import { db } from '@/lib/db'
-import { eachDayOfInterval, format, startOfDay } from 'date-fns'
+import { getTenantDb } from '@/lib/prisma'
+import { getTenantId } from '@/lib/tenant-context'
+import { eachDayOfInterval, format } from 'date-fns'
 
 export async function getFluxoCaixa(inicio: string, fim: string) {
+  const prisma = getTenantDb()
+  // Parcela não tem tenantId direto — filtrada via parcelamento.tenantId
+  const tenantId = getTenantId()
+
   const dtInicio = new Date(inicio)
   const dtFim = new Date(fim)
 
   const [entradas, saidas, saldoAnterior, parcelasVencendo] = await Promise.all([
-    // Receitas pagas no período
-    db.transacaoFinanceira.findMany({
+    prisma.transacaoFinanceira.findMany({
       where: { tipo: 'RECEITA', status: 'PAGO', data: { gte: dtInicio, lte: dtFim } },
       select: { data: true, valor: true, descricao: true, categoria: { select: { nome: true } } },
       orderBy: { data: 'asc' },
     }),
-    // Despesas + Investimentos pagos no período
-    db.transacaoFinanceira.findMany({
+    prisma.transacaoFinanceira.findMany({
       where: { tipo: { in: ['DESPESA', 'INVESTIMENTO'] }, status: 'PAGO', data: { gte: dtInicio, lte: dtFim } },
       select: { data: true, valor: true, descricao: true, tipo: true, categoria: { select: { nome: true } } },
       orderBy: { data: 'asc' },
     }),
-    // Saldo acumulado antes do período
-    db.transacaoFinanceira.aggregate({
+    prisma.transacaoFinanceira.aggregate({
       where: { status: 'PAGO', data: { lt: dtInicio } },
       _sum: { valor: true },
     }),
-    // Parcelas de cartão com vencimento no período (previstas)
+    // Parcela não tem tenantId — isolamento garantido via parcelamento.tenantId
     db.parcela.findMany({
       where: {
         dataVencimento: { gte: dtInicio, lte: dtFim },
-        parcelamento: { status: 'ATIVO' },
+        parcelamento: { status: 'ATIVO', tenantId },
       },
       include: { parcelamento: { select: { descricao: true, bandeira: true, profissionalId: true } } },
       orderBy: { dataVencimento: 'asc' },
     }),
   ])
 
-  // Agrupar por dia
-  const dias = eachDayOfInterval({ start: dtInicio, end: dtFim })
   const totalEntradas = entradas.reduce((s, t) => s + Number(t.valor), 0)
   const totalSaidas = saidas.reduce((s, t) => s + Number(t.valor), 0)
   const saldoInicial = Number(saldoAnterior._sum.valor ?? 0)
 
-  // Para calcular o saldo inicial real, precisa também subtrair despesas anteriores
   const [despesasAnteriores] = await Promise.all([
-    db.transacaoFinanceira.aggregate({
+    prisma.transacaoFinanceira.aggregate({
       where: { tipo: { in: ['DESPESA', 'INVESTIMENTO'] }, status: 'PAGO', data: { lt: dtInicio } },
       _sum: { valor: true },
     }),
   ])
   const saldoInicialReal = saldoInicial - Number(despesasAnteriores._sum.valor ?? 0)
 
-  // Mapa dia → valores
+  const dias = eachDayOfInterval({ start: dtInicio, end: dtFim })
   const entradasPorDia = new Map<string, number>()
   const saidasPorDia = new Map<string, number>()
 
-  // Parcelas pagas (já recebidas)
   for (const p of parcelasVencendo.filter(p => p.status === 'PAGO')) {
     const k = format(new Date(p.dataVencimento), 'yyyy-MM-dd')
     entradasPorDia.set(k, (entradasPorDia.get(k) ?? 0) + Number(p.valor))
