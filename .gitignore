@@ -35,6 +35,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# backups de banco (podem conter dados sensíveis)
+/backups/
+
 # documentação sensível (não subir ao GitHub)
 REFERENCIA.md
 seed-prod.mjs

@@ -4,6 +4,13 @@
 -- Contexto: Conversão de single-tenant para multi-tenant SaaS
 -- Autor: Rodrigo Rosa
 --
+-- REFERÊNCIA COMBINADA — prefira usar os arquivos separados:
+--   001a_seed_dev_tenant.sql       → só o INSERT (dev, staging, produção pós-migrate)
+--   001b_migrate_existing_data.sql → só os UPDATEs (produção com dados existentes)
+--
+-- Este arquivo contém ambos os passos em sequência e é mantido para
+-- referência histórica e execução em lote quando necessário.
+--
 -- ATENÇÃO: Execute dentro de uma transação. Em caso de erro,
 -- o ROLLBACK automático preserva o estado original.
 -- Leia o README.md antes de executar.
