@@ -532,6 +532,32 @@ await db.parcela.findMany({
 
 ---
 
+## Banco de Testes E2E — Decisão de Infraestrutura (2026-05-22)
+
+**Contexto:** Suite E2E de isolamento multi-tenant requer banco de dados real.
+
+**Decisão:** PostgreSQL schema separado (`test_schema`) no mesmo projeto Supabase dev, acessado via `DATABASE_URL_TEST=...?schema=test_schema`.
+
+**Justificativa:**
+- Limite de 2 projetos Supabase free impede segundo projeto dedicado
+- Schemas PostgreSQL são completamente isolados — tabelas em schemas diferentes não se enxergam
+- Mesmo stack do dev/produção → testes representativos
+- `test_schema` é dropado e recriado a cada run: zero contaminação entre execuções
+- Docker evitado por fricção no ambiente Windows do operador
+
+**Garantias de segurança implementadas em `__tests__/e2e/setup.ts`:**
+1. `DATABASE_URL_TEST` deve estar definida e não vazia
+2. `DATABASE_URL_TEST` deve conter parâmetro `?schema=` explícito
+3. O schema não pode ser `"public"`
+4. `DATABASE_URL_TEST` deve ser diferente de `DATABASE_URL`
+5. `SELECT current_schema()` ao vivo deve confirmar `test_schema` antes de qualquer operação
+
+**Abordagem de conexão:** pool nativo pg usa credenciais do `DATABASE_URL` (confirmadas) + schema extraído do `DATABASE_URL_TEST`. O `search_path` é injetado via PostgreSQL startup option `-c search_path=test_schema` (confiável, sem race conditions).
+
+**Estratégia de reset:** DROP SCHEMA CASCADE + CREATE SCHEMA + `prisma migrate deploy` (sem rodar `prisma/seed.ts`).
+
+---
+
 ## Padrões obrigatórios para queries multi-tenant
 
 Estes padrões foram identificados durante a refatoração multi-tenant (Lotes 1-3) e DEVEM ser seguidos em todo código novo que acessa o banco. Violações criam vazamentos de dados entre tenants — bugs silenciosos e de difícil rastreamento.
