@@ -50,6 +50,11 @@ enum PlanoTenant {
   ENTERPRISE
 }
 
+enum Periodicidade {
+  MENSAL
+  ANUAL
+}
+
 enum StatusTenant {
   TRIAL
   ATIVO
@@ -62,6 +67,7 @@ model Tenant {
   slug                String       @unique
   nome                String
   plano               PlanoTenant  @default(BASICO)
+  periodicidade       Periodicidade @default(MENSAL) // default técnico; tenants novos definem na escolha de plano (Lote E)
   status              StatusTenant @default(TRIAL)
   trialEndsAt         DateTime?
   asaasCustomerId     String?

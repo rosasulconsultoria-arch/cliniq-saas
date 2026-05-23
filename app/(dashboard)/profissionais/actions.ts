@@ -6,6 +6,9 @@ import { revalidatePath } from 'next/cache'
 import { ProfissionalSchema } from '@/lib/schemas/profissional'
 import { gerarSlug } from '@/lib/utils'
 import bcrypt from 'bcryptjs'
+import { db as globalDb } from '@/lib/db'
+import { getTenantId } from '@/lib/tenant-context'
+import { checkLimit } from '@/lib/plans'
 
 export async function criarProfissional(data: unknown): Promise<{ error?: string }> {
   return withTenantAction(async () => {
@@ -17,7 +20,14 @@ export async function criarProfissional(data: unknown): Promise<{ error?: string
 
     if (!senha) return { error: 'Senha é obrigatória ao cadastrar profissional' }
 
+    const tenantId = getTenantId()
     const db = getTenantDb()
+    const [tenant, count] = await Promise.all([
+      globalDb.tenant.findUnique({ where: { id: tenantId }, select: { plano: true } }),
+      db.profissional.count(),
+    ])
+    const check = checkLimit(tenant!.plano, 'profissionais', count)
+    if (!check.allowed) return { error: check.message }
     const base = gerarSlug(nome)
     let slug = base
     let n = 1
