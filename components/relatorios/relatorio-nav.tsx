@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 const NAV = [
   { href: '/relatorios', label: 'Faturamento', exact: true },
   { href: '/relatorios/por-profissional', label: 'Por Profissional' },
-  { href: '/relatorios/por-sala', label: 'Por Sala' },
+  { href: '/relatorios/por-local', label: 'Por Local' },
   { href: '/relatorios/despesas-categoria', label: 'Despesas' },
   { href: '/relatorios/dre', label: 'DRE' },
   { href: '/relatorios/comissoes', label: 'Comissões' },

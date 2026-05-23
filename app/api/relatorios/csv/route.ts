@@ -3,11 +3,11 @@ import { auth } from '@/lib/auth'
 import {
   getFaturamentoPorPeriodo,
   getFaturamentoPorProfissional,
-  getFaturamentoPorSala,
+  getFaturamentoPorLocal,
   getDespesasPorCategoria,
   getDRE,
   getComissoesPorProfissional,
-  getOcupacaoPorSala,
+  getOcupacaoPorLocal,
   getPacientesAtivos,
 } from '@/lib/relatorios'
 import { format } from 'date-fns'
@@ -54,11 +54,11 @@ export async function GET(req: Request) {
         ].join('\n')
         break
       }
-      case 'por-sala': {
-        const dados = await getFaturamentoPorSala(inicio, fim)
+      case 'por-local': {
+        const dados = await getFaturamentoPorLocal(inicio, fim)
         csv = [
-          row('Sala', 'Consultas', 'Faturamento'),
-          ...dados.map(d => row(d.sala, d.consultas, sep(d.faturamento))),
+          row('Local', 'Consultas', 'Faturamento'),
+          ...dados.map(d => row(d.local, d.consultas, sep(d.faturamento))),
         ].join('\n')
         break
       }
@@ -92,10 +92,10 @@ export async function GET(req: Request) {
         break
       }
       case 'ocupacao': {
-        const dados = await getOcupacaoPorSala(inicio, fim)
+        const dados = await getOcupacaoPorLocal(inicio, fim)
         csv = [
-          row('Sala', 'Agendamentos', 'Realizados', 'Slots Disponíveis', 'Taxa (%)'),
-          ...dados.map(d => row(d.sala, d.agendado, d.realizado, d.slotsTotal, d.taxa.toFixed(1).replace('.', ','))),
+          row('Local', 'Agendamentos', 'Realizados', 'Slots Disponíveis', 'Taxa (%)'),
+          ...dados.map(d => row(d.local, d.agendado, d.realizado, d.slotsTotal, d.taxa.toFixed(1).replace('.', ','))),
         ].join('\n')
         break
       }

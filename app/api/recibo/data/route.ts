@@ -29,7 +29,7 @@ export async function GET(req: Request) {
       include: {
         profissional: { include: { user: { select: { name: true } } } },
         paciente: { select: { nome: true, cpf: true, telefone: true, email: true } },
-        sala: { select: { nome: true } },
+        local: { select: { nome: true } },
       },
     }),
     db.configClinica.findUnique({ where: { id: 'default' } }),
@@ -64,7 +64,7 @@ export async function GET(req: Request) {
     profissionalCrp: prof.crp ?? null,
     dataServico: format(inicio, "dd/MM/yyyy", { locale: ptBR }),
     horario: `${format(inicio, 'HH:mm')} – ${format(fim, 'HH:mm')} (${duracao} min)`,
-    salaNome: ag.sala.nome,
+    salaNome: ag.local.nome,
     servicoDesc: ag.tipoCobranca === 'PACOTE' && ag.totalSessoes
       ? `Pacote de ${ag.totalSessoes} sessões de Psicologia`
       : 'Consulta de Psicologia',

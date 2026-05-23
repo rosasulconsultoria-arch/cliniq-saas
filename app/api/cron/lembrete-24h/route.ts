@@ -39,7 +39,7 @@ export async function GET(req: Request) {
           include: {
             paciente: { select: { nome: true, email: true, telefone: true } },
             profissional: { include: { user: { select: { name: true } } } },
-            sala: { select: { nome: true } },
+            local: { select: { nome: true } },
           },
         })
 
@@ -54,7 +54,7 @@ export async function GET(req: Request) {
             pacienteEmail: agend.paciente.email,
             pacienteTelefone: agend.paciente.telefone,
             profissionalNome: agend.profissional.user.name,
-            salaNome: agend.sala.nome,
+            localNome: agend.local.nome,
             tipoCobranca: agend.tipoCobranca,
             totalSessoes: agend.totalSessoes,
             formaPagamento: (agend as any).formaPagamento,

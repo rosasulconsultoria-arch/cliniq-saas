@@ -45,8 +45,8 @@ const NAV_ITEMS = [
     roles: ['ADMIN', 'RECEPCAO'],
   },
   {
-    href: '/salas',
-    label: 'Salas',
+    href: '/locais',
+    label: 'Locais',
     icon: DoorOpen,
     roles: ['ADMIN', 'RECEPCAO'],
   },

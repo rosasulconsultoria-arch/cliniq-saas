@@ -28,11 +28,11 @@ const SECOES = [
     itens: [
       {
         pergunta: 'Como criar um novo agendamento?',
-        resposta: 'Clique no botão "Novo Agendamento" no topo da agenda. O formulário segue este fluxo: (1) Busque o paciente pelo nome. Se não encontrar, clique em "Cadastrar como paciente" para criar o cadastro rapidamente sem sair da tela. (2) Selecione profissional, data, horário (dropdown de 08:00 a 19:30) e duração. (3) Escolha a sala. (4) Selecione os serviços prestados. (5) Informe valor, tipo de cobrança e forma de pagamento.',
+        resposta: 'Clique no botão "Novo Agendamento" no topo da agenda. O formulário segue este fluxo: (1) Busque o paciente pelo nome. Se não encontrar, clique em "Cadastrar como paciente" para criar o cadastro rapidamente sem sair da tela. (2) Selecione profissional, data, horário (dropdown de 08:00 a 19:30) e duração. (3) Escolha o local. (4) Selecione os serviços prestados. (5) Informe valor, tipo de cobrança e forma de pagamento.',
       },
       {
-        pergunta: 'Como funciona a visão de salas (portas coloridas)?',
-        resposta: 'A visão padrão da agenda é a grade por salas. Cada coluna representa uma sala e cada linha um horário de 30 minutos. As portas têm cores: VERDE = livre (clique para agendar naquele slot, sala já pré-selecionada), VERMELHA = agendado, AMARELA = atendimento em andamento agora. Use os botões de alternância no toolbar para mudar para visão semanal ou mensal.',
+        pergunta: 'Como funciona a visão de locais (portas coloridas)?',
+        resposta: 'A visão padrão da agenda é a grade por locais. Cada coluna representa um local e cada linha um horário de 30 minutos. As portas têm cores: VERDE = livre (clique para agendar naquele slot, local já pré-selecionado), VERMELHA = agendado, AMARELA = atendimento em andamento agora. Use os botões de alternância no toolbar para mudar para visão semanal ou mensal.',
       },
       {
         pergunta: 'Como criar agendamentos recorrentes?',

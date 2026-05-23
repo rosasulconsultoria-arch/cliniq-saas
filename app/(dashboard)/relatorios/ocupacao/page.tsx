@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import { getOcupacaoPorSala } from '@/lib/relatorios'
+import { getOcupacaoPorLocal } from '@/lib/relatorios'
 import { periodoToRange } from '@/lib/periodo-utils'
 import { PeriodoRelatorio } from '@/components/relatorios/periodo-relatorio'
 import { ExportButtons } from '@/components/relatorios/export-buttons'
@@ -13,7 +13,7 @@ interface Props { searchParams: Record<string, string | string[] | undefined> }
 export default async function RelatorioOcupacaoPage({ searchParams }: Props) {
   const preset = getSearchParam(searchParams.periodo, 'mes_atual')
   const { inicio, fim } = periodoToRange(preset, getSearchParam(searchParams.de), getSearchParam(searchParams.ate))
-  const dados = await getOcupacaoPorSala(inicio, fim)
+  const dados = await getOcupacaoPorLocal(inicio, fim)
 
   const csvHref = `/api/relatorios/csv?tipo=ocupacao&inicio=${inicio}&fim=${fim}`
 
@@ -26,7 +26,7 @@ export default async function RelatorioOcupacaoPage({ searchParams }: Props) {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">{dados.length} sala(s) ativa(s)</p>
+        <p className="text-sm text-muted-foreground">{dados.length} local(is) ativo(s)</p>
         <div className="flex gap-2">
           <Suspense><PeriodoRelatorio /></Suspense>
           <ExportButtons csvHref={csvHref} filename="ocupacao-salas" />
@@ -36,7 +36,7 @@ export default async function RelatorioOcupacaoPage({ searchParams }: Props) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Sala</TableHead>
+              <TableHead>Local</TableHead>
               <TableHead className="text-right">Agendamentos</TableHead>
               <TableHead className="text-right">Realizados</TableHead>
               <TableHead className="text-right">Slots Disponíveis</TableHead>
@@ -47,8 +47,8 @@ export default async function RelatorioOcupacaoPage({ searchParams }: Props) {
             {dados.length === 0 ? (
               <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-12">Nenhum dado no período.</TableCell></TableRow>
             ) : dados.map(r => (
-              <TableRow key={r.sala}>
-                <TableCell className="font-medium">{r.sala}</TableCell>
+              <TableRow key={r.local}>
+                <TableCell className="font-medium">{r.local}</TableCell>
                 <TableCell className="text-right">{r.agendado}</TableCell>
                 <TableCell className="text-right">{r.realizado}</TableCell>
                 <TableCell className="text-right text-muted-foreground">{r.slotsTotal}</TableCell>

@@ -128,7 +128,7 @@ export async function downloadReciboPDF(agendamentoId: string): Promise<void> {
   const profLabel = [d.profissionalNome, d.profissionalEsp, d.profissionalCrp ? `CRP ${d.profissionalCrp}` : ''].filter(Boolean).join(' · ')
 
   const leftCols = [`Profissional: ${profLabel}`, `Horário: ${d.horario}`]
-  const rightCols = [`Data: ${d.dataServico}`, `Sala: ${d.salaNome}`]
+  const rightCols = [`Data: ${d.dataServico}`, `Local: ${d.localNome}`]
   leftCols.forEach(t => { doc.text(t, 14, y); y += 5 })
   const colStartY = y - leftCols.length * 5
   rightCols.forEach((t, i) => doc.text(t, W / 2, colStartY + i * 5))
@@ -220,9 +220,9 @@ export async function downloadRelatorioPDF(
 
   const LABELS: Record<string, string> = {
     faturamento: 'Faturamento por Período', 'por-profissional': 'Faturamento por Profissional',
-    'por-sala': 'Faturamento por Sala', 'despesas-categoria': 'Despesas por Categoria',
+    'por-local': 'Faturamento por Local', 'despesas-categoria': 'Despesas por Categoria',
     dre: 'DRE — Demonstrativo de Resultado', comissoes: 'Comissões por Profissional',
-    ocupacao: 'Ocupação por Sala', pacientes: 'Relatório de Pacientes',
+    ocupacao: 'Ocupação por Local', pacientes: 'Relatório de Pacientes',
   }
   const title = LABELS[filename] ?? filename.replace(/-/g, ' ').toUpperCase()
 

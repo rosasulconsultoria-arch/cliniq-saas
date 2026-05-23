@@ -10,8 +10,9 @@ import { SearchInput } from '@/components/search-input'
 import { TablePagination } from '@/components/table-pagination'
 import { EmptyState } from '@/components/empty-state'
 import { DeleteButton } from '@/components/delete-button'
-import { deletarSala } from './actions'
+import { deletarLocal } from './actions'
 import { getSearchParam, getPageParam } from '@/lib/utils'
+import { TIPO_LOCAL_LABELS, TIPO_LOCAL_ICONS } from '@/lib/schemas/local'
 
 const PER_PAGE = 10
 
@@ -19,7 +20,7 @@ interface Props {
   searchParams: Record<string, string | string[] | undefined>
 }
 
-export default async function SalasPage({ searchParams }: Props) {
+export default async function LocaisPage({ searchParams }: Props) {
   const q = getSearchParam(searchParams.q)
   const page = getPageParam(searchParams.page)
 
@@ -30,7 +31,7 @@ export default async function SalasPage({ searchParams }: Props) {
 
   const db = getTenantDb()
   const [dados, total] = await Promise.all([
-    db.sala.findMany({
+    db.local.findMany({
       where,
       include: {
         _count: {
@@ -48,34 +49,34 @@ export default async function SalasPage({ searchParams }: Props) {
       take: PER_PAGE,
       orderBy: { nome: 'asc' },
     }),
-    db.sala.count({ where }),
+    db.local.count({ where }),
   ])
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Salas</h1>
-          <p className="text-sm text-muted-foreground mt-1">Gerencie as salas da clínica</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Locais</h1>
+          <p className="text-sm text-muted-foreground mt-1">Gerencie os locais de atendimento</p>
         </div>
         <Button asChild>
-          <Link href="/salas/novo">
+          <Link href="/locais/novo">
             <Plus className="h-4 w-4 mr-2" />
-            Nova Sala
+            Novo Local
           </Link>
         </Button>
       </div>
 
       <Suspense>
-        <SearchInput placeholder="Buscar sala..." />
+        <SearchInput placeholder="Buscar local..." />
       </Suspense>
 
       {dados.length === 0 ? (
         <EmptyState
           icon={DoorOpen}
-          title="Nenhuma sala encontrada"
-          description={q ? `Nenhum resultado para "${q}"` : 'Cadastre a primeira sala para começar.'}
-          action={!q ? <Button asChild><Link href="/salas/novo">Cadastrar Sala</Link></Button> : undefined}
+          title="Nenhum local encontrado"
+          description={q ? `Nenhum resultado para "${q}"` : 'Cadastre o primeiro local para começar.'}
+          action={!q ? <Button asChild><Link href="/locais/novo">Cadastrar Local</Link></Button> : undefined}
         />
       ) : (
         <div className="rounded-lg border bg-card">
@@ -83,8 +84,8 @@ export default async function SalasPage({ searchParams }: Props) {
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
-                <TableHead>Capacidade</TableHead>
-                <TableHead>Descrição</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Detalhes</TableHead>
                 <TableHead>Agend. no Mês</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="w-24 text-right">Ações</TableHead>
@@ -94,11 +95,13 @@ export default async function SalasPage({ searchParams }: Props) {
               {dados.map((s) => (
                 <TableRow key={s.id}>
                   <TableCell className="font-medium">{s.nome}</TableCell>
-                  <TableCell className="text-muted-foreground text-sm">
-                    {s.capacidade} {s.capacidade === 1 ? 'pessoa' : 'pessoas'}
+                  <TableCell>
+                    <span className="text-sm">
+                      {TIPO_LOCAL_ICONS[s.tipo]} {TIPO_LOCAL_LABELS[s.tipo]}
+                    </span>
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm max-w-xs truncate">
-                    {s.descricao ?? '—'}
+                    {s.endereco ?? s.linkPadrao ?? s.instrucoes ?? s.descricao ?? '—'}
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary">{s._count.agendamentos}</Badge>
@@ -108,17 +111,17 @@ export default async function SalasPage({ searchParams }: Props) {
                       variant={s.ativa ? 'outline' : 'destructive'}
                       className={s.ativa ? 'border-green-500 text-green-600 dark:text-green-400' : ''}
                     >
-                      {s.ativa ? 'Ativa' : 'Inativa'}
+                      {s.ativa ? 'Ativo' : 'Inativo'}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
-                        <Link href={`/salas/${s.id}`}><Pencil className="h-4 w-4" /></Link>
+                        <Link href={`/locais/${s.id}`}><Pencil className="h-4 w-4" /></Link>
                       </Button>
                       <DeleteButton
-                        onDelete={deletarSala.bind(null, s.id)}
-                        description={`Excluir a sala "${s.nome}"? Salas com agendamentos não podem ser excluídas.`}
+                        onDelete={deletarLocal.bind(null, s.id)}
+                        description={`Excluir o local "${s.nome}"? Locais com agendamentos não podem ser excluídos.`}
                       />
                     </div>
                   </TableCell>

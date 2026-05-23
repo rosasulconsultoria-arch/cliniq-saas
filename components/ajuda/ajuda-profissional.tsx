@@ -39,15 +39,15 @@ const SECOES = [
     itens: [
       {
         pergunta: 'Posso ver a agenda dos outros profissionais?',
-        resposta: 'Sim. A agenda exibe todos os agendamentos de todos os profissionais da clínica, o que permite visualizar a ocupação das salas e evitar conflitos. No entanto, você só pode alterar o status (Realizado, Confirmado, Cancelar, etc.) dos seus próprios agendamentos.',
+        resposta: 'Sim. A agenda exibe todos os agendamentos de todos os profissionais da clínica, o que permite visualizar a ocupação dos locais e evitar conflitos. No entanto, você só pode alterar o status (Realizado, Confirmado, Cancelar, etc.) dos seus próprios agendamentos.',
       },
       {
-        pergunta: 'Como usar a visão de salas (portas coloridas)?',
-        resposta: 'A visão padrão é a grade por salas. Cada coluna representa uma sala e cada linha um slot de 30 minutos. PORTA VERDE = disponível (clique para agendar nesse horário e sala), PORTA VERMELHA = ocupada com agendamento, PORTA AMARELA = atendimento acontecendo agora. Use os ícones no toolbar para alternar para visão semanal ou mensal.',
+        pergunta: 'Como usar a visão de locais (portas coloridas)?',
+        resposta: 'A visão padrão é a grade por locais. Cada coluna representa um local e cada linha um slot de 30 minutos. PORTA VERDE = disponível (clique para agendar nesse horário e local), PORTA VERMELHA = ocupada com agendamento, PORTA AMARELA = atendimento acontecendo agora. Use os ícones no toolbar para alternar para visão semanal ou mensal.',
       },
       {
         pergunta: 'Como criar um novo agendamento?',
-        resposta: 'Clique no botão "Novo Agendamento" ou numa porta verde na grade de salas. O formulário pede: (1) Paciente (busca por nome; se não encontrar, cadastre rapidamente inline). (2) Data, horário e duração. (3) Sala (pré-selecionada ao clicar na porta). (4) Serviços prestados. (5) Valor e forma de pagamento.',
+        resposta: 'Clique no botão "Novo Agendamento" ou numa porta verde na grade de locais. O formulário pede: (1) Paciente (busca por nome; se não encontrar, cadastre rapidamente inline). (2) Data, horário e duração. (3) Local (pré-selecionado ao clicar na porta). (4) Serviços prestados. (5) Valor e forma de pagamento.',
       },
       {
         pergunta: 'Como criar agendamentos recorrentes (paciente fixo)?',

@@ -144,7 +144,7 @@ export function AppointmentDetailsDialog({ agendamento, open, onClose, onSuccess
               <span className="text-muted-foreground">Profissional</span>
               <span>{agendamento.profissional.nome}</span>
 
-              <span className="text-muted-foreground">Sala</span>
+              <span className="text-muted-foreground">Local</span>
               <span>{agendamento.sala.nome}</span>
 
               <span className="text-muted-foreground">Data</span>

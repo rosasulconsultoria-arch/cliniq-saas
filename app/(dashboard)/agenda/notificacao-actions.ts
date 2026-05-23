@@ -14,7 +14,7 @@ export async function reenviarConfirmacao(agendamentoId: string): Promise<{ erro
       include: {
         paciente: { select: { nome: true, email: true, telefone: true } },
         profissional: { include: { user: { select: { name: true } } } },
-        sala: { select: { nome: true } },
+        local: { select: { nome: true } },
       },
     })
     if (!agend) return { error: 'Agendamento não encontrado' }
@@ -28,7 +28,7 @@ export async function reenviarConfirmacao(agendamentoId: string): Promise<{ erro
       pacienteEmail: agend.paciente.email,
       pacienteTelefone: agend.paciente.telefone,
       profissionalNome: agend.profissional.user.name,
-      salaNome: agend.sala.nome,
+      localNome: agend.local.nome,
       tipoCobranca: agend.tipoCobranca,
       totalSessoes: agend.totalSessoes,
       formaPagamento: (agend as any).formaPagamento,

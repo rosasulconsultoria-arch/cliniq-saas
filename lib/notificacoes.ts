@@ -16,7 +16,7 @@ export interface DadosAgendamento {
   pacienteEmail?: string | null
   pacienteTelefone?: string | null
   profissionalNome: string
-  salaNome: string
+  localNome: string
   tipoCobranca?: string
   totalSessoes?: number | null
   formaPagamento?: string | null
@@ -63,7 +63,7 @@ function gerarCorpoEmail(tipo: 'confirmacao' | 'lembrete', dados: DadosAgendamen
       <table style="width: 100%; border-collapse: collapse;">
         <tr><td style="padding: 6px 0; color: #64748b; font-size: 13px;">📅 Data e hora</td><td style="padding: 6px 0; font-weight: 600; color: #1e293b; font-size: 13px; text-align: right;">${formatarDataHora(dados.dataHoraInicio)}</td></tr>
         <tr><td style="padding: 6px 0; color: #64748b; font-size: 13px;">👨‍⚕️ Profissional</td><td style="padding: 6px 0; font-weight: 600; color: #1e293b; font-size: 13px; text-align: right;">${dados.profissionalNome}</td></tr>
-        <tr><td style="padding: 6px 0; color: #64748b; font-size: 13px;">🏠 Local</td><td style="padding: 6px 0; font-weight: 600; color: #1e293b; font-size: 13px; text-align: right;">${dados.salaNome}</td></tr>
+        <tr><td style="padding: 6px 0; color: #64748b; font-size: 13px;">🏠 Local</td><td style="padding: 6px 0; font-weight: 600; color: #1e293b; font-size: 13px; text-align: right;">${dados.localNome}</td></tr>
         <tr><td style="padding: 6px 0; color: #64748b; font-size: 13px;">📋 Tipo</td><td style="padding: 6px 0; font-weight: 600; color: #1e293b; font-size: 13px; text-align: right;">${detalheCobranca}</td></tr>
         <tr><td style="padding: 6px 0; color: #64748b; font-size: 13px;">💳 Pagamento</td><td style="padding: 6px 0; font-weight: 600; color: #1e293b; font-size: 13px; text-align: right;">${detalhePagamento}</td></tr>
         <tr><td style="padding: 6px 0; color: #64748b; font-size: 13px;">💰 Valor</td><td style="padding: 6px 0; font-weight: 700; color: #059669; font-size: 14px; text-align: right;">${formatarValor(dados.valor)}</td></tr>
@@ -129,8 +129,8 @@ export function gerarLinkWhatsApp(dados: DadosAgendamento, tipo: 'confirmacao' |
     : ''
 
   const msg = tipo === 'confirmacao'
-    ? `Olá, ${dados.pacienteNome}! ✅ Sua consulta foi confirmada.\n\n📅 *${formatarDataHora(dados.dataHoraInicio)}*\n👨‍⚕️ ${dados.profissionalNome}\n🏠 ${dados.salaNome}\n📋 ${detalheCobranca}${pagamento ? `\n💳 ${pagamento}` : ''}\n💰 ${formatarValor(dados.valor)}\n\nAté lá! 😊`
-    : `Olá, ${dados.pacienteNome}! 🔔 Lembrete: sua consulta é *amanhã* às ${format(dados.dataHoraInicio, 'HH:mm')}.\n\n👨‍⚕️ ${dados.profissionalNome} — ${dados.salaNome}\n\nAté amanhã! 😊`
+    ? `Olá, ${dados.pacienteNome}! ✅ Sua consulta foi confirmada.\n\n📅 *${formatarDataHora(dados.dataHoraInicio)}*\n👨‍⚕️ ${dados.profissionalNome}\n🏠 ${dados.localNome}\n📋 ${detalheCobranca}${pagamento ? `\n💳 ${pagamento}` : ''}\n💰 ${formatarValor(dados.valor)}\n\nAté lá! 😊`
+    : `Olá, ${dados.pacienteNome}! 🔔 Lembrete: sua consulta é *amanhã* às ${format(dados.dataHoraInicio, 'HH:mm')}.\n\n👨‍⚕️ ${dados.profissionalNome} — ${dados.localNome}\n\nAté amanhã! 😊`
 
   return `https://wa.me/${telBR}?text=${encodeURIComponent(msg)}`
 }

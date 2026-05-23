@@ -13,14 +13,14 @@ const TIME_SLOTS = Array.from({ length: 24 }, (_, i) => {
   return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`
 })
 
-interface SalaItem { id: string; nome: string }
+interface LocalItem { id: string; nome: string }
 type DoorState = 'livre' | 'agendado' | 'em-atendimento'
 
 interface Props {
   agendamentos: AgendamentoDisplay[]
-  salas: SalaItem[]
+  locais: LocalItem[]
   currentDate: Date
-  onSlotClick: (date: Date, time: string, salaId: string) => void
+  onSlotClick: (date: Date, time: string, localId: string) => void
   onAppointmentClick: (apt: AgendamentoDisplay) => void
 }
 
@@ -54,7 +54,7 @@ function Door({ state }: { state: DoorState }) {
   )
 }
 
-export function RoomGridView({ agendamentos, salas, currentDate, onSlotClick, onAppointmentClick }: Props) {
+export function RoomGridView({ agendamentos, locais, currentDate, onSlotClick, onAppointmentClick }: Props) {
   const now = new Date()
 
   const dayApts = useMemo(
@@ -62,13 +62,13 @@ export function RoomGridView({ agendamentos, salas, currentDate, onSlotClick, on
     [agendamentos, currentDate],
   )
 
-  function getApt(salaId: string, slot: string): AgendamentoDisplay | null {
+  function getApt(localId: string, slot: string): AgendamentoDisplay | null {
     const [h, m] = slot.split(':').map(Number)
     const slotStart = new Date(currentDate)
     slotStart.setHours(h, m, 0, 0)
     const slotEnd = new Date(slotStart.getTime() + 30 * 60_000)
     return dayApts.find(a => {
-      if (a.sala.id !== salaId || a.status === 'CANCELADO') return false
+      if (a.sala.id !== localId || a.status === 'CANCELADO') return false
       const s = parseISO(a.dataHoraInicio)
       const e = parseISO(a.dataHoraFim)
       return s < slotEnd && e > slotStart
@@ -99,9 +99,9 @@ export function RoomGridView({ agendamentos, salas, currentDate, onSlotClick, on
               <th className="w-16 py-3 px-3 text-left text-xs font-medium text-muted-foreground border-b">
                 Horário
               </th>
-              {salas.map(sala => (
-                <th key={sala.id} className="py-3 px-2 text-center text-xs font-semibold border-b border-l min-w-[110px]">
-                  {sala.nome}
+              {locais.map(local => (
+                <th key={local.id} className="py-3 px-2 text-center text-xs font-semibold border-b border-l min-w-[110px]">
+                  {local.nome}
                 </th>
               ))}
             </tr>
@@ -112,15 +112,15 @@ export function RoomGridView({ agendamentos, salas, currentDate, onSlotClick, on
                 <td className="py-1.5 px-3 text-xs text-muted-foreground font-mono tabular-nums">
                   {time}
                 </td>
-                {salas.map(sala => {
-                  const apt = getApt(sala.id, time)
+                {locais.map(local => {
+                  const apt = getApt(local.id, time)
                   const state = doorState(apt)
                   const tooltip = apt
                     ? `${apt.paciente.nome}\n${format(parseISO(apt.dataHoraInicio), 'HH:mm')}–${format(parseISO(apt.dataHoraFim), 'HH:mm')} · ${apt.profissional.nome}`
                     : 'Livre — clique para agendar'
 
                   return (
-                    <td key={sala.id} className="py-1 px-2 border-l text-center">
+                    <td key={local.id} className="py-1 px-2 border-l text-center">
                       <button
                         className={cn(
                           'inline-flex flex-col items-center gap-0.5 px-2 py-1 rounded transition-all w-full',
@@ -129,7 +129,7 @@ export function RoomGridView({ agendamentos, salas, currentDate, onSlotClick, on
                           state === 'em-atendimento' && 'hover:bg-amber-50 dark:hover:bg-amber-950/20',
                         )}
                         title={tooltip}
-                        onClick={() => apt ? onAppointmentClick(apt) : onSlotClick(currentDate, time, sala.id)}
+                        onClick={() => apt ? onAppointmentClick(apt) : onSlotClick(currentDate, time, local.id)}
                       >
                         <Door state={state} />
                         {apt && (

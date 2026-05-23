@@ -72,7 +72,7 @@ model Tenant {
   users                 User[]
   profissionais         Profissional[]
   pacientes             Paciente[]
-  salas                 Sala[]
+  locais                Local[]
   disponibilidades      Disponibilidade[]
   bloqueios             Bloqueio[]
   agendamentos          Agendamento[]
@@ -176,15 +176,26 @@ model Paciente {
   @@index([nome])
 }
 
-model Sala {
-  id         String   @id @default(cuid())
-  tenantId   String
-  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  nome       String
-  capacidade Int      @default(1)
-  descricao  String?
-  ativa      Boolean  @default(true)
-  createdAt  DateTime @default(now())
+enum TipoLocal {
+  SALA
+  ONLINE
+  DOMICILIAR
+  EXTERNO
+}
+
+model Local {
+  id          String    @id @default(cuid())
+  tenantId    String
+  tenant      Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  nome        String
+  tipo        TipoLocal @default(SALA)
+  capacidade  Int?
+  descricao   String?
+  endereco    String?   // SALA ou EXTERNO
+  linkPadrao  String?   // ONLINE — link de videoconferência padrão
+  instrucoes  String?   // qualquer tipo — exibidas ao paciente
+  ativa       Boolean   @default(true)
+  createdAt   DateTime  @default(now())
 
   agendamentos Agendamento[]
 
@@ -228,8 +239,8 @@ model Agendamento {
   profissional       Profissional      @relation(fields: [profissionalId], references: [id], onDelete: Restrict)
   pacienteId         String
   paciente           Paciente          @relation(fields: [pacienteId], references: [id], onDelete: Restrict)
-  salaId             String
-  sala               Sala              @relation(fields: [salaId], references: [id], onDelete: Restrict)
+  localId            String
+  local              Local             @relation(fields: [localId], references: [id], onDelete: Restrict)
   dataHoraInicio     DateTime
   dataHoraFim        DateTime
   status             StatusAgendamento @default(AGENDADO)
@@ -261,7 +272,7 @@ model Agendamento {
   @@index([profissionalId])
   @@index([recorrenciaGrupoId])
   @@index([pacienteId])
-  @@index([salaId])
+  @@index([localId])
 }
 
 model CategoriaFinanceira {

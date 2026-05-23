@@ -45,9 +45,9 @@ beforeAll(async () => {
   const [p1B] = await db.profissional.findMany({ where: { tenantId: tidB, slugAgendamento: 'dr-test' } })
   prof1AId = p1A.id; prof2AId = p2A.id; prof1BId = p1B.id
 
-  // Salas
-  const [sA] = await db.sala.findMany({ where: { tenantId: tidA } })
-  const [sB] = await db.sala.findMany({ where: { tenantId: tidB } })
+  // Locais
+  const [sA] = await db.local.findMany({ where: { tenantId: tidA } })
+  const [sB] = await db.local.findMany({ where: { tenantId: tidB } })
   sala_aId = sA.id; sala_bId = sB.id
 
   // Pacientes
@@ -123,7 +123,7 @@ describe('Grupo 2 — Isolamento em writes', () => {
         data: {
           profissionalId: prof1AId,
           pacienteId:     pac2AId,
-          salaId:         sala_aId,
+          localId:        sala_aId,
           dataHoraInicio: new Date('2026-07-01T10:00:00'),
           dataHoraFim:    new Date('2026-07-01T10:50:00'),
           status:         'AGENDADO',

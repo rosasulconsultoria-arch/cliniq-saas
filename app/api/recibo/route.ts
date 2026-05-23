@@ -40,7 +40,7 @@ export async function GET(req: Request) {
       include: {
         profissional: { include: { user: { select: { name: true } } } },
         paciente: { select: { nome: true, cpf: true, telefone: true, email: true } },
-        sala: { select: { nome: true } },
+        local: { select: { nome: true } },
       },
     }),
     db.configClinica.findUnique({ where: { id: 'default' } }),
@@ -98,7 +98,7 @@ export async function GET(req: Request) {
       profissionalLabel,
       dataServico,
       horario,
-      salaNome: ag.sala.nome,
+      salaNome: ag.local.nome,
       servicoDesc,
       valor: brl(Number(ag.valor)),
       formaPagamento: formaPag,
@@ -211,7 +211,7 @@ export async function GET(req: Request) {
         <div class="item"><label>Profissional</label><span>${profLabel}</span></div>
         <div class="item"><label>Data</label><span>${dataServico}</span></div>
         <div class="item"><label>Horário</label><span>${horario}</span></div>
-        <div class="item"><label>Local</label><span>${ag.sala.nome}</span></div>
+        <div class="item"><label>Local</label><span>${ag.local.nome}</span></div>
         ${(ag as any).tipoCobranca === 'PACOTE' && (ag as any).totalSessoes ? `<div class="item"><label>Pacote</label><span>${(ag as any).totalSessoes} sessões</span></div>` : ''}
       </div>
     </div>

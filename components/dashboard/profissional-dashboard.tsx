@@ -152,7 +152,7 @@ export async function ProfissionalDashboard({ profissionalId, nome }: Props) {
                 <div key={a.id} className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{a.paciente}</p>
-                    <p className="text-xs text-muted-foreground">{a.sala}</p>
+                    <p className="text-xs text-muted-foreground">{a.local}</p>
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="text-xs font-semibold">

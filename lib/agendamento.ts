@@ -1,4 +1,5 @@
 import { getTenantDb } from '@/lib/prisma'
+import { TIPO_LOCAL_FISICO } from '@/lib/schemas/local'
 
 export async function getHorariosDisponiveis(
   profissionalId: string,
@@ -68,15 +69,26 @@ export async function getHorariosDisponiveis(
   return slots
 }
 
-export async function getSalaDisponivel(inicio: Date, fim: Date): Promise<string | null> {
+/**
+ * Encontra o primeiro local físico disponível para um horário.
+ * Locais tipo ONLINE ou DOMICILIAR não são retornados aqui —
+ * eles nunca ficam "ocupados" por outros agendamentos.
+ */
+export async function getLocalDisponivel(inicio: Date, fim: Date): Promise<string | null> {
   const db = getTenantDb()
 
-  const salas = await db.sala.findMany({ where: { ativa: true }, orderBy: { nome: 'asc' } })
+  const locais = await db.local.findMany({
+    where: {
+      ativa: true,
+      tipo: { in: TIPO_LOCAL_FISICO },
+    },
+    orderBy: { nome: 'asc' },
+  })
 
-  for (const sala of salas) {
+  for (const local of locais) {
     const conflito = await db.agendamento.findFirst({
       where: {
-        salaId: sala.id,
+        localId: local.id,
         status: { notIn: ['CANCELADO'] },
         OR: [
           { dataHoraInicio: { gte: inicio, lt: fim } },
@@ -85,7 +97,7 @@ export async function getSalaDisponivel(inicio: Date, fim: Date): Promise<string
         ],
       },
     })
-    if (!conflito) return sala.id
+    if (!conflito) return local.id
   }
 
   return null

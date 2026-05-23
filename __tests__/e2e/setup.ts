@@ -120,7 +120,7 @@ async function cleanupPublicContamination() {
     await client.query(`DELETE FROM "ConfigClinica" WHERE "tenantId" IN (${ids})`)
     await client.query(`DELETE FROM "Profissional" WHERE "tenantId" IN (${ids})`)
     await client.query(`DELETE FROM "Paciente" WHERE "tenantId" IN (${ids})`)
-    await client.query(`DELETE FROM "Sala" WHERE "tenantId" IN (${ids})`)
+    await client.query(`DELETE FROM "Local" WHERE "tenantId" IN (${ids})`)
     await client.query(`DELETE FROM "User" WHERE "tenantId" IN (${ids})`)
     await client.query(`DELETE FROM "Tenant" WHERE id IN (${ids})`)
 
@@ -195,8 +195,8 @@ async function seed(seedDb: PrismaClient) {
       },
     })
 
-    const sala = await seedDb.sala.create({
-      data: { tenantId: tid, nome: `Sala ${label}1`, capacidade: 1, ativa: true },
+    const sala = await seedDb.local.create({
+      data: { tenantId: tid, nome: `Local ${label}1`, tipo: 'SALA', capacidade: 1, ativa: true },
     })
 
     // CPF compartilhado — valida @@unique([cpf, tenantId])
@@ -223,7 +223,7 @@ async function seed(seedDb: PrismaClient) {
         data: {
           tenantId: tid, profissionalId: prof1.id,
           pacienteId: i < 3 ? pac1.id : i === 3 ? pac2.id : pac3.id,
-          salaId: sala.id, dataHoraInicio: inicio,
+          localId: sala.id, dataHoraInicio: inicio,
           dataHoraFim: new Date(inicio.getTime() + 50 * 60_000),
           status: i < 2 ? 'REALIZADO' : 'AGENDADO', valor: 200, origem: 'INTERNO',
         },

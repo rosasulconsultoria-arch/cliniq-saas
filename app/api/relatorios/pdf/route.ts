@@ -3,9 +3,9 @@ import { createElement } from 'react'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import {
-  getFaturamentoPorPeriodo, getFaturamentoPorProfissional, getFaturamentoPorSala,
+  getFaturamentoPorPeriodo, getFaturamentoPorProfissional, getFaturamentoPorLocal,
   getDespesasPorCategoria, getDRE, getComissoesPorProfissional,
-  getOcupacaoPorSala, getPacientesAtivos,
+  getOcupacaoPorLocal, getPacientesAtivos,
 } from '@/lib/relatorios'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -17,11 +17,11 @@ export const maxDuration = 30
 const LABELS: Record<string, string> = {
   faturamento: 'Faturamento por Período',
   'por-profissional': 'Faturamento por Profissional',
-  'por-sala': 'Faturamento por Sala',
+  'por-local': 'Faturamento por Local',
   'despesas-categoria': 'Despesas por Categoria',
   dre: 'DRE — Demonstrativo de Resultado',
   comissoes: 'Comissões por Profissional',
-  ocupacao: 'Ocupação por Sala',
+  ocupacao: 'Ocupação por Local',
   pacientes: 'Relatório de Pacientes',
 }
 
@@ -53,10 +53,10 @@ export async function GET(req: Request) {
         rows = d.map(r => [r.profissional, String(r.consultas), brl(r.faturamento)])
         break
       }
-      case 'por-sala': {
-        const d = await getFaturamentoPorSala(inicio, fim)
-        headers = ['Sala', 'Consultas', 'Faturamento']
-        rows = d.map(r => [r.sala, String(r.consultas), brl(r.faturamento)])
+      case 'por-local': {
+        const d = await getFaturamentoPorLocal(inicio, fim)
+        headers = ['Local', 'Consultas', 'Faturamento']
+        rows = d.map(r => [r.local, String(r.consultas), brl(r.faturamento)])
         break
       }
       case 'despesas-categoria': {
@@ -85,9 +85,9 @@ export async function GET(req: Request) {
         break
       }
       case 'ocupacao': {
-        const d = await getOcupacaoPorSala(inicio, fim)
-        headers = ['Sala', 'Agendamentos', 'Realizados', 'Slots Disponíveis', 'Taxa (%)']
-        rows = d.map(r => [r.sala, String(r.agendado), String(r.realizado), String(r.slotsTotal), `${r.taxa.toFixed(1)}%`])
+        const d = await getOcupacaoPorLocal(inicio, fim)
+        headers = ['Local', 'Agendamentos', 'Realizados', 'Slots Disponíveis', 'Taxa (%)']
+        rows = d.map(r => [r.local, String(r.agendado), String(r.realizado), String(r.slotsTotal), `${r.taxa.toFixed(1)}%`])
         break
       }
       case 'pacientes': {

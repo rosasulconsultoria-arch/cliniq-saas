@@ -39,20 +39,20 @@ const DURATION_OPTIONS = [
 ]
 
 interface ProfissionalItem { id: string; nome: string; valorConsultaPadrao: number | null; tipoVinculo: string }
-interface SalaItem { id: string; nome: string }
+interface LocalItem { id: string; nome: string }
 
 interface Props {
   open: boolean
   onClose: () => void
-  slot: { date: Date; time: string; salaId?: string } | null
+  slot: { date: Date; time: string; localId?: string } | null
   profissionais: ProfissionalItem[]
-  salas: SalaItem[]
+  locais: LocalItem[]
   userRole: string
   userProfissionalId?: string
   onSuccess: () => void
 }
 
-export function AgendamentoDialog({ open, onClose, slot, profissionais, salas, userRole, userProfissionalId, onSuccess }: Props) {
+export function AgendamentoDialog({ open, onClose, slot, profissionais, locais, userRole, userProfissionalId, onSuccess }: Props) {
   const [isPending, startTransition] = useTransition()
   const [isCadastrando, startCadastroTransition] = useTransition()
 
@@ -77,7 +77,7 @@ export function AgendamentoDialog({ open, onClose, slot, profissionais, salas, u
       origem: 'INTERNO',
       profissionalId: userRole === 'PROFISSIONAL' && userProfissionalId ? userProfissionalId : '',
       pacienteId: '',
-      salaId: '',
+      localId: '',
       dataHoraInicio: '',
       recorrente: false,
       totalRecorrencias: 4,
@@ -109,7 +109,7 @@ export function AgendamentoDialog({ open, onClose, slot, profissionais, salas, u
     if (slot && open) {
       setSelectedDate(format(slot.date, 'yyyy-MM-dd'))
       setSelectedTime(slot.time)
-      if (slot.salaId) setValue('salaId', slot.salaId)
+      if (slot.localId) setValue('localId', slot.localId)
     }
   }, [slot, open, setValue])
 
@@ -284,7 +284,7 @@ export function AgendamentoDialog({ open, onClose, slot, profissionais, salas, u
           </div>
           {errors.dataHoraInicio && <p className="text-xs text-destructive">{errors.dataHoraInicio.message}</p>}
 
-          {/* 4. Duração + Sala */}
+          {/* 4. Duração + Local */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Duração</Label>
@@ -304,22 +304,22 @@ export function AgendamentoDialog({ open, onClose, slot, profissionais, salas, u
               />
             </div>
             <div className="space-y-1.5">
-              <Label>Sala *</Label>
+              <Label>Local *</Label>
               <Controller
                 control={control}
-                name="salaId"
+                name="localId"
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                     <SelectContent>
-                      {salas.map((s) => (
+                      {locais.map((s) => (
                         <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 )}
               />
-              {errors.salaId && <p className="text-xs text-destructive">{errors.salaId.message}</p>}
+              {errors.localId && <p className="text-xs text-destructive">{errors.localId.message}</p>}
             </div>
           </div>
 

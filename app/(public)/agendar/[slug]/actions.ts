@@ -2,7 +2,7 @@
 
 import { getTenantDb } from '@/lib/prisma'
 import { withTenantAction } from '@/lib/with-tenant-action'
-import { getHorariosDisponiveis, getSalaDisponivel } from '@/lib/agendamento'
+import { getHorariosDisponiveis, getLocalDisponivel } from '@/lib/agendamento'
 import { criarTokenCancelamento } from '@/lib/tokens'
 import { enviarEmailConfirmacao } from '@/lib/email'
 import { validarCPF } from '@/lib/utils'
@@ -63,9 +63,9 @@ export async function agendarPublico({
       return { error: 'Este horário não está mais disponível. Por favor, escolha outro.' }
     }
 
-    const salaId = await getSalaDisponivel(inicio, fim)
-    if (!salaId) {
-      return { error: 'Não há salas disponíveis neste horário. Tente outro horário.' }
+    const localId = await getLocalDisponivel(inicio, fim)
+    if (!localId) {
+      return { error: 'Não há locais disponíveis neste horário. Tente outro horário.' }
     }
 
     const cpf = pacienteParsed.data.cpf.replace(/\D/g, '')
@@ -107,7 +107,7 @@ export async function agendarPublico({
         data: {
           profissionalId,
           pacienteId: paciente.id,
-          salaId,
+          localId,
           dataHoraInicio: inicio,
           dataHoraFim: fim,
           status: 'AGENDADO',

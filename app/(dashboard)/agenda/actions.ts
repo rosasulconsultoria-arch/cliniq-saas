@@ -16,7 +16,7 @@ export async function getAgendamentos({
   inicio,
   fim,
   profissionalId,
-  salaId,
+  localId,
   status,
   userRole,
   userProfissionalId,
@@ -24,7 +24,7 @@ export async function getAgendamentos({
   inicio: string
   fim: string
   profissionalId?: string
-  salaId?: string
+  localId?: string
   status?: string
   userRole: string
   userProfissionalId?: string
@@ -40,7 +40,7 @@ export async function getAgendamentos({
       where.profissionalId = profissionalId
     }
 
-    if (salaId) where.salaId = salaId
+    if (localId) where.localId = localId
     if (status && status !== 'TODOS') where.status = status
 
     const agendamentos = await db.agendamento.findMany({
@@ -48,7 +48,7 @@ export async function getAgendamentos({
       include: {
         profissional: { select: { id: true, fotoBase64: true, asaasApiKey: true, user: { select: { name: true } } } },
         paciente: { select: { id: true, nome: true, email: true, telefone: true } },
-        sala: { select: { id: true, nome: true } },
+        local: { select: { id: true, nome: true } },
       },
       orderBy: { dataHoraInicio: 'asc' },
     })
@@ -73,7 +73,7 @@ export async function getAgendamentos({
       asaasPaymentStatus: a.asaasPaymentStatus ?? null,
       profissional: { id: a.profissionalId, nome: a.profissional.user.name, foto: a.profissional.fotoBase64 ?? null, temAsaas: !!a.profissional.asaasApiKey },
       paciente: { id: a.pacienteId, nome: a.paciente.nome, email: a.paciente.email ?? null, telefone: a.paciente.telefone ?? null },
-      sala: { id: a.salaId, nome: a.sala.nome },
+      sala: { id: a.localId, nome: a.local.nome },
     }))
   })
 }
@@ -135,7 +135,7 @@ export async function criarAgendamento(data: unknown): Promise<{ error?: string;
       for (const { dtInicio, dtFim } of ocorrencias) {
         const [cp, cs] = await Promise.all([
           conflito({ profissionalId: rest.profissionalId }, dtInicio, dtFim),
-          conflito({ salaId: rest.salaId }, dtInicio, dtFim),
+          conflito({ localId: rest.localId }, dtInicio, dtFim),
         ])
         const dataLabel = format(dtInicio, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
         if (cp) return { error: `Conflito de horário do profissional em ${dataLabel}` }
@@ -173,7 +173,7 @@ export async function criarAgendamento(data: unknown): Promise<{ error?: string;
     // ── Agendamento único ──
     const [conflitoProfissional, conflitoSala] = await Promise.all([
       conflito({ profissionalId: rest.profissionalId }, inicio, fim),
-      conflito({ salaId: rest.salaId }, inicio, fim),
+      conflito({ localId: rest.localId }, inicio, fim),
     ])
 
     if (conflitoProfissional) return { error: 'Profissional já tem agendamento nesse horário' }
@@ -185,7 +185,7 @@ export async function criarAgendamento(data: unknown): Promise<{ error?: string;
         include: {
           paciente: { select: { nome: true, email: true, telefone: true } },
           profissional: { include: { user: { select: { name: true } } } },
-          sala: { select: { nome: true } },
+          local: { select: { nome: true } },
         },
       })
 
@@ -236,7 +236,7 @@ export async function criarAgendamento(data: unknown): Promise<{ error?: string;
         pacienteEmail: agend.paciente.email,
         pacienteTelefone: agend.paciente.telefone,
         profissionalNome: agend.profissional.user.name,
-        salaNome: agend.sala.nome,
+        localNome: agend.local.nome,
         tipoCobranca: agend.tipoCobranca,
         totalSessoes: agend.totalSessoes,
         formaPagamento: (agend as any).formaPagamento,
@@ -283,7 +283,7 @@ export async function atualizarAgendamento(id: string, data: unknown): Promise<{
 
     const [conflitoProfissional, conflitoSala] = await Promise.all([
       conflito({ profissionalId: rest.profissionalId }),
-      conflito({ salaId: rest.salaId }),
+      conflito({ localId: rest.localId }),
     ])
 
     if (conflitoProfissional) return { error: 'Profissional já tem agendamento nesse horário' }

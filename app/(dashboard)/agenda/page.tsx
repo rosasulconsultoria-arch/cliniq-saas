@@ -24,13 +24,13 @@ export default async function AgendaPage() {
     dataHoraInicio: { gte: inicio, lte: fim },
   }
 
-  const [agendamentos, profissionais, salas] = await Promise.all([
+  const [agendamentos, profissionais, locais] = await Promise.all([
     db.agendamento.findMany({
       where,
       include: {
         profissional: { include: { user: { select: { name: true } } } },
         paciente: { select: { id: true, nome: true, email: true, telefone: true } },
-        sala: { select: { id: true, nome: true } },
+        local: { select: { id: true, nome: true } },
       },
       orderBy: { dataHoraInicio: 'asc' },
     }),
@@ -39,7 +39,7 @@ export default async function AgendaPage() {
       include: { user: { select: { name: true } } },
       orderBy: { user: { name: 'asc' } },
     }),
-    db.sala.findMany({
+    db.local.findMany({
       where: { ativa: true },
       select: { id: true, nome: true },
       orderBy: { nome: 'asc' },
@@ -66,7 +66,7 @@ export default async function AgendaPage() {
     asaasPaymentStatus: a.asaasPaymentStatus ?? null,
     profissional: { id: a.profissionalId, nome: a.profissional.user.name, foto: a.profissional.fotoBase64 ?? null, temAsaas: !!a.profissional.asaasApiKey },
     paciente: { id: a.pacienteId, nome: a.paciente.nome, email: a.paciente.email ?? null, telefone: a.paciente.telefone ?? null },
-    sala: { id: a.salaId, nome: a.sala.nome },
+    sala: { id: a.localId, nome: a.local.nome },
   }))
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -81,7 +81,7 @@ export default async function AgendaPage() {
     <CalendarContainer
       agendamentosInicial={agendamentosSerializados}
       profissionais={profissionaisSerializados}
-      salas={salas}
+      locais={locais}
       userRole={session?.user?.role ?? 'RECEPCAO'}
       userProfissionalId={userProfissionalId}
     />

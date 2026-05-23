@@ -44,7 +44,7 @@ export async function getDashboardProfissional(profissionalId: string) {
       },
       include: {
         paciente: { select: { nome: true } },
-        sala: { select: { nome: true } },
+        local: { select: { nome: true } },
       },
       orderBy: { dataHoraInicio: 'asc' },
     }),
@@ -90,7 +90,7 @@ export async function getDashboardProfissional(profissionalId: string) {
     consultasHoje: consultasHoje.map(a => ({
       id: a.id,
       paciente: a.paciente.nome,
-      sala: a.sala.nome,
+      local: a.local.nome,
       horario: a.dataHoraInicio.toISOString(),
       status: a.status,
     })),

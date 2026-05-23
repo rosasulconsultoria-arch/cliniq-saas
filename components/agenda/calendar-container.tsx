@@ -24,12 +24,12 @@ type View = 'rooms' | 'weekly' | 'monthly'
 type Agendamento = AgendamentoDisplay
 
 interface ProfissionalItem { id: string; nome: string; valorConsultaPadrao: number | null; tipoVinculo: string }
-interface SalaItem { id: string; nome: string }
+interface LocalItem { id: string; nome: string }
 
 interface Props {
   agendamentosInicial: Agendamento[]
   profissionais: ProfissionalItem[]
-  salas: SalaItem[]
+  locais: LocalItem[]
   userRole: string
   userProfissionalId?: string
 }
@@ -47,19 +47,19 @@ function buildMonthGrid(date: Date): Date[][] {
   return weeks
 }
 
-export function CalendarContainer({ agendamentosInicial, profissionais, salas, userRole, userProfissionalId }: Props) {
+export function CalendarContainer({ agendamentosInicial, profissionais, locais, userRole, userProfissionalId }: Props) {
   const router = useRouter()
   const [view, setView] = useState<View>('rooms')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>(agendamentosInicial)
   const [profissionalFilter, setProfissionalFilter] = useState('')
-  const [salaFilter, setSalaFilter] = useState('')
+  const [localFilter, setLocalFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [isLoading, startTransition] = useTransition()
 
   // Dialog state
   const [newDialogOpen, setNewDialogOpen] = useState(false)
-  const [newDialogSlot, setNewDialogSlot] = useState<{ date: Date; time: string; salaId?: string } | null>(null)
+  const [newDialogSlot, setNewDialogSlot] = useState<{ date: Date; time: string; localId?: string } | null>(null)
   const [selectedAgendamento, setSelectedAgendamento] = useState<Agendamento | null>(null)
 
   // Week days for weekly view
@@ -75,14 +75,14 @@ export function CalendarContainer({ agendamentosInicial, profissionais, salas, u
         inicio: inicio.toISOString(),
         fim: fim.toISOString(),
         profissionalId: profissionalFilter || undefined,
-        salaId: salaFilter || undefined,
+        localId: localFilter || undefined,
         status: statusFilter || undefined,
         userRole,
         userProfissionalId,
       })
       setAgendamentos(data as Agendamento[])
     })
-  }, [view, profissionalFilter, salaFilter, statusFilter, userRole, userProfissionalId])
+  }, [view, profissionalFilter, localFilter, statusFilter, userRole, userProfissionalId])
 
   function navigate(direction: 'prev' | 'next' | 'today') {
     let newDate: Date
@@ -99,8 +99,8 @@ export function CalendarContainer({ agendamentosInicial, profissionais, salas, u
     fetchData(newDate)
   }
 
-  function handleSlotClick(date: Date, time: string, salaId?: string) {
-    setNewDialogSlot({ date, time, salaId })
+  function handleSlotClick(date: Date, time: string, localId?: string) {
+    setNewDialogSlot({ date, time, localId })
     setNewDialogOpen(true)
   }
 
@@ -156,11 +156,11 @@ export function CalendarContainer({ agendamentosInicial, profissionais, salas, u
             </Select>
           )}
 
-          <Select value={salaFilter} onValueChange={(v) => { setSalaFilter(v); fetchData(currentDate) }}>
-            <SelectTrigger className="h-8 w-28 text-xs"><SelectValue placeholder="Sala" /></SelectTrigger>
+          <Select value={localFilter} onValueChange={(v) => { setLocalFilter(v); fetchData(currentDate) }}>
+            <SelectTrigger className="h-8 w-28 text-xs"><SelectValue placeholder="Local" /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="todos">Todas</SelectItem>
-              {salas.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}
+              <SelectItem value="todos">Todos</SelectItem>
+              {locais.map((s) => <SelectItem key={s.id} value={s.id}>{s.nome}</SelectItem>)}
             </SelectContent>
           </Select>
 
@@ -178,7 +178,7 @@ export function CalendarContainer({ agendamentosInicial, profissionais, salas, u
 
           {/* View toggle */}
           <div className="flex rounded-md border overflow-hidden">
-            <Button variant={view === 'rooms' ? 'default' : 'ghost'} size="sm" className="rounded-none h-8 px-2" onClick={() => setView('rooms')} title="Visão por salas">
+            <Button variant={view === 'rooms' ? 'default' : 'ghost'} size="sm" className="rounded-none h-8 px-2" onClick={() => setView('rooms')} title="Visão por locais">
               <Building2 className="h-3.5 w-3.5" />
             </Button>
             <Button variant={view === 'weekly' ? 'default' : 'ghost'} size="sm" className="rounded-none h-8 px-2" onClick={() => setView('weekly')} title="Visão semanal">
@@ -196,7 +196,7 @@ export function CalendarContainer({ agendamentosInicial, profissionais, salas, u
         {view === 'rooms' ? (
           <RoomGridView
             agendamentos={agendamentos}
-            salas={salas}
+            locais={locais}
             currentDate={currentDate}
             onSlotClick={handleSlotClick}
             onAppointmentClick={handleAppointmentClick}
@@ -224,7 +224,7 @@ export function CalendarContainer({ agendamentosInicial, profissionais, salas, u
         onClose={() => setNewDialogOpen(false)}
         slot={newDialogSlot}
         profissionais={profissionais}
-        salas={salas}
+        locais={locais}
         userRole={userRole}
         userProfissionalId={userProfissionalId}
         onSuccess={handleSuccess}

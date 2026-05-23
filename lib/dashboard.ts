@@ -92,7 +92,7 @@ export async function getDashboardKPIs(inicioStr: string, fimStr: string, inicio
     db.agendamento.count({ where: { status: 'REALIZADO', dataHoraInicio: { gte: inicioAnt, lte: fimAnt } } }),
     db.agendamento.count({ where: { status: { in: ['FALTOU', 'CANCELADO'] }, dataHoraInicio: { gte: inicio, lte: fim } } }),
     db.agendamento.count({ where: { dataHoraInicio: { gte: inicio, lte: fim } } }),
-    db.sala.count({ where: { ativa: true } }),
+    db.local.count({ where: { ativa: true } }),
   ])
 
   const receita = Number(recAtual._sum.valor ?? 0)

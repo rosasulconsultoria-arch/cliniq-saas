@@ -39,20 +39,20 @@ export async function getFaturamentoPorProfissional(ini: string, fi: string) {
   }))
 }
 
-export async function getFaturamentoPorSala(ini: string, fi: string) {
+export async function getFaturamentoPorLocal(ini: string, fi: string) {
   const db = getTenantDb()
   const inicio = new Date(ini), fim = new Date(fi)
   const grupos = await db.agendamento.groupBy({
-    by: ['salaId'],
+    by: ['localId'],
     where: { status: 'REALIZADO', dataHoraInicio: { gte: inicio, lte: fim } },
     _sum: { valor: true },
     _count: { id: true },
   })
-  const salaIds = grupos.map(g => g.salaId)
-  const salas = await db.sala.findMany({ where: { id: { in: salaIds } } })
+  const localIds = grupos.map(g => g.localId)
+  const salas = await db.local.findMany({ where: { id: { in: localIds } } })
   const map = Object.fromEntries(salas.map(s => [s.id, s.nome]))
   return grupos.map(g => ({
-    sala: map[g.salaId] ?? g.salaId,
+    sala: map[g.localId] ?? g.localId,
     consultas: g._count.id,
     faturamento: Number(g._sum.valor ?? 0),
   })).sort((a, b) => b.faturamento - a.faturamento)
@@ -140,20 +140,20 @@ export async function getPacientesAtivos() {
   }
 }
 
-export async function getOcupacaoPorSala(ini: string, fi: string) {
+export async function getOcupacaoPorLocal(ini: string, fi: string) {
   const db = getTenantDb()
   const inicio = new Date(ini), fim = new Date(fi)
   const dias = Math.max(1, Math.ceil((fim.getTime() - inicio.getTime()) / 86400000))
-  const salas = await db.sala.findMany({ where: { ativa: true } })
+  const salas = await db.local.findMany({ where: { ativa: true } })
   const resultado = await Promise.all(
     salas.map(async (sala) => {
       const [total, realizado] = await Promise.all([
-        db.agendamento.count({ where: { salaId: sala.id, dataHoraInicio: { gte: inicio, lte: fim }, status: { notIn: ['CANCELADO'] } } }),
-        db.agendamento.count({ where: { salaId: sala.id, dataHoraInicio: { gte: inicio, lte: fim }, status: 'REALIZADO' } }),
+        db.agendamento.count({ where: { localId: sala.id, dataHoraInicio: { gte: inicio, lte: fim }, status: { notIn: ['CANCELADO'] } } }),
+        db.agendamento.count({ where: { localId: sala.id, dataHoraInicio: { gte: inicio, lte: fim }, status: 'REALIZADO' } }),
       ])
       const slotsTotal = dias * 14
       const taxa = slotsTotal > 0 ? (total / slotsTotal) * 100 : 0
-      return { sala: sala.nome, agendado: total, realizado, slotsTotal, taxa }
+      return { sala: local.nome, agendado: total, realizado, slotsTotal, taxa }
     })
   )
   return resultado.sort((a, b) => b.taxa - a.taxa)
