@@ -87,6 +87,7 @@ model Tenant {
   despesasProfissional  DespesaProfissional[]
   alugueis              Aluguel[]
   configClinica         ConfigClinica[]
+  reservasLocal         ReservaLocal[]
 }
 
 model User {
@@ -141,6 +142,7 @@ model Profissional {
   transacoes       TransacaoFinanceira[]
   despesas         DespesaProfissional[]
   parcelamentos    Parcelamento[]
+  reservas         ReservaLocal[]
 
   @@unique([slugAgendamento, tenantId])
   @@index([tenantId])
@@ -198,9 +200,32 @@ model Local {
   createdAt   DateTime  @default(now())
 
   agendamentos Agendamento[]
+  reservas     ReservaLocal[]
 
   @@unique([nome, tenantId])
   @@index([tenantId])
+}
+
+model ReservaLocal {
+  id             String       @id @default(cuid())
+  tenantId       String
+  tenant         Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  localId        String
+  local          Local        @relation(fields: [localId], references: [id], onDelete: Restrict)
+  profissionalId String
+  profissional   Profissional @relation(fields: [profissionalId], references: [id], onDelete: Restrict)
+  diaSemana      Int          // 0=domingo ... 6=sábado
+  horaInicio     String       // formato "HH:MM"
+  horaFim        String       // formato "HH:MM"
+  vigenciaInicio DateTime?
+  vigenciaFim    DateTime?
+  ativa          Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([tenantId])
+  @@index([localId, diaSemana, ativa])
+  @@index([profissionalId])
 }
 
 model Disponibilidade {

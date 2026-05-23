@@ -108,6 +108,7 @@ async function cleanupPublicContamination() {
     await client.query(`DELETE FROM "TransacaoFinanceira" WHERE "tenantId" IN (${ids})`)
     await client.query(`DELETE FROM "Parcelamento" WHERE "tenantId" IN (${ids})`)
     await client.query(`DELETE FROM "Agendamento" WHERE "tenantId" IN (${ids})`)
+    await client.query(`DELETE FROM "ReservaLocal" WHERE "tenantId" IN (${ids})`)
     await client.query(`DELETE FROM "Disponibilidade" WHERE "tenantId" IN (${ids})`)
     await client.query(`DELETE FROM "Bloqueio" WHERE "tenantId" IN (${ids})`)
     await client.query(`DELETE FROM "DespesaProfissional" WHERE "tenantId" IN (${ids})`)

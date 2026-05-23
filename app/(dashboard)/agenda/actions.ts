@@ -7,6 +7,7 @@ import { AgendamentoSchema } from '@/lib/schemas/agendamento'
 import { addMonths, format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { enviarConfirmacaoEmail, gerarLinkWhatsApp } from '@/lib/notificacoes'
+import { validarConflitoAgendamento } from '@/lib/agendamento'
 
 // ──────────────────────────────────────────────
 // Queries
@@ -111,19 +112,6 @@ export async function criarAgendamento(data: unknown): Promise<{ error?: string;
     const inicio = new Date(dataHoraInicio)
     const fim = new Date(inicio.getTime() + duracao * 60_000)
 
-    const conflito = (where: Record<string, unknown>, dtInicio: Date, dtFim: Date) =>
-      db.agendamento.findFirst({
-        where: {
-          ...where,
-          status: { notIn: ['CANCELADO'] },
-          OR: [
-            { dataHoraInicio: { gte: dtInicio, lt: dtFim } },
-            { dataHoraFim: { gt: dtInicio, lte: dtFim } },
-            { AND: [{ dataHoraInicio: { lte: dtInicio } }, { dataHoraFim: { gte: dtFim } }] },
-          ],
-        },
-      })
-
     // ── Agendamento recorrente ──
     if (recorrente && totalRecorrencias && totalRecorrencias >= 2) {
       const ocorrencias = Array.from({ length: totalRecorrencias }, (_, i) => {
@@ -133,13 +121,11 @@ export async function criarAgendamento(data: unknown): Promise<{ error?: string;
       })
 
       for (const { dtInicio, dtFim } of ocorrencias) {
-        const [cp, cs] = await Promise.all([
-          conflito({ profissionalId: rest.profissionalId }, dtInicio, dtFim),
-          conflito({ localId: rest.localId }, dtInicio, dtFim),
-        ])
-        const dataLabel = format(dtInicio, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
-        if (cp) return { error: `Conflito de horário do profissional em ${dataLabel}` }
-        if (cs) return { error: `Sala ocupada em ${dataLabel}` }
+        const resultado = await validarConflitoAgendamento(rest.profissionalId, rest.localId, dtInicio, dtFim)
+        if (!resultado.ok) {
+          const dataLabel = format(dtInicio, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+          return { error: `${resultado.motivo} em ${dataLabel}` }
+        }
       }
 
       const grupoId = crypto.randomUUID()
@@ -171,13 +157,8 @@ export async function criarAgendamento(data: unknown): Promise<{ error?: string;
     }
 
     // ── Agendamento único ──
-    const [conflitoProfissional, conflitoSala] = await Promise.all([
-      conflito({ profissionalId: rest.profissionalId }, inicio, fim),
-      conflito({ localId: rest.localId }, inicio, fim),
-    ])
-
-    if (conflitoProfissional) return { error: 'Profissional já tem agendamento nesse horário' }
-    if (conflitoSala) return { error: 'Sala já está ocupada nesse horário' }
+    const resultado = await validarConflitoAgendamento(rest.profissionalId, rest.localId, inicio, fim)
+    if (!resultado.ok) return { error: resultado.motivo! }
 
     try {
       const agend = await db.agendamento.create({
@@ -267,27 +248,8 @@ export async function atualizarAgendamento(id: string, data: unknown): Promise<{
     const inicio = new Date(dataHoraInicio)
     const fim = new Date(inicio.getTime() + duracao * 60_000)
 
-    const conflito = (where: Record<string, unknown>) =>
-      db.agendamento.findFirst({
-        where: {
-          ...where,
-          id: { not: id },
-          status: { notIn: ['CANCELADO'] },
-          OR: [
-            { dataHoraInicio: { gte: inicio, lt: fim } },
-            { dataHoraFim: { gt: inicio, lte: fim } },
-            { AND: [{ dataHoraInicio: { lte: inicio } }, { dataHoraFim: { gte: fim } }] },
-          ],
-        },
-      })
-
-    const [conflitoProfissional, conflitoSala] = await Promise.all([
-      conflito({ profissionalId: rest.profissionalId }),
-      conflito({ localId: rest.localId }),
-    ])
-
-    if (conflitoProfissional) return { error: 'Profissional já tem agendamento nesse horário' }
-    if (conflitoSala) return { error: 'Sala já está ocupada nesse horário' }
+    const resultado = await validarConflitoAgendamento(rest.profissionalId, rest.localId, inicio, fim, id)
+    if (!resultado.ok) return { error: resultado.motivo! }
 
     try {
       await db.agendamento.update({

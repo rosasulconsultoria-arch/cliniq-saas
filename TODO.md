@@ -1,4 +1,12 @@
-# Dívida Técnica — Testes de Isolamento Multi-tenant
+# Dívida Técnica
+
+## Fase 2
+
+- **Atualizar `getLocalDisponivel` para considerar `ReservaLocal`** — atualmente pode sugerir local com reserva ativa de outro profissional. O agendamento será bloqueado na validação, mas a UX fica ruim (local sugerido e depois recusado). Ver `lib/agendamento.ts`.
+
+---
+
+# Testes de Isolamento Multi-tenant
 
 ## Estado atual dos testes (pós-Lote 3)
 

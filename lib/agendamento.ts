@@ -1,6 +1,87 @@
 import { getTenantDb } from '@/lib/prisma'
 import { TIPO_LOCAL_FISICO } from '@/lib/schemas/local'
 
+// HH:MM string a partir de um Date — agendamentos não cruzam meia-noite (premissa de clínica)
+function formatTime(d: Date): string {
+  return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`
+}
+
+/**
+ * Valida se um agendamento pode ser criado/atualizado sem conflito.
+ * Deve ser chamada dentro de runWithTenant ou withTenantAction.
+ */
+export async function validarConflitoAgendamento(
+  profissionalId: string,
+  localId: string,
+  inicio: Date,
+  fim: Date,
+  excluirAgendamentoId?: string,
+): Promise<{ ok: boolean; motivo?: string }> {
+  // Assert implícito: lança se chamada fora de contexto de tenant
+  const db = getTenantDb()
+
+  const idExclusao = excluirAgendamentoId ? { not: excluirAgendamentoId } : undefined
+  const overlapWhere = [{ dataHoraInicio: { lt: fim }, dataHoraFim: { gt: inicio } }]
+
+  // 1. Conflito de profissional — sempre valida
+  const conflitoProf = await db.agendamento.findFirst({
+    where: {
+      profissionalId,
+      ...(idExclusao && { id: idExclusao }),
+      status: { notIn: ['CANCELADO'] },
+      OR: overlapWhere,
+    },
+  })
+  if (conflitoProf) return { ok: false, motivo: 'Profissional já tem agendamento nesse horário' }
+
+  // 2. Conflito de local — depende do tipo
+  const local = await db.local.findFirst({
+    where: { id: localId },
+    select: { tipo: true },
+  })
+  if (!local) return { ok: false, motivo: 'Local não encontrado' }
+
+  // ONLINE e DOMICILIAR: múltiplos profissionais podem usar simultaneamente
+  if (local.tipo === 'ONLINE' || local.tipo === 'DOMICILIAR') {
+    return { ok: true }
+  }
+
+  // SALA ou EXTERNO: verificar ReservaLocal ativa que cobre o slot
+  // Sobreposição: reserva.horaInicio < formatTime(fim) AND reserva.horaFim > formatTime(inicio)
+  // Boundary exato (reserva termina no mesmo minuto que agendamento começa) não é conflito
+  const reserva = await db.reservaLocal.findFirst({
+    where: {
+      localId,
+      diaSemana: inicio.getDay(),
+      ativa: true,
+      AND: [
+        { OR: [{ vigenciaInicio: null }, { vigenciaInicio: { lte: inicio } }] },
+        { OR: [{ vigenciaFim: null }, { vigenciaFim: { gte: inicio } }] },
+      ],
+      horaInicio: { lt: formatTime(fim) },
+      horaFim: { gt: formatTime(inicio) },
+    },
+  })
+
+  if (reserva) {
+    if (reserva.profissionalId === profissionalId) return { ok: true }
+    return { ok: false, motivo: 'Local reservado para outro profissional neste horário' }
+  }
+
+  // Sem reserva ativa: conflito padrão de agendamento no local
+  const conflitoLocal = await db.agendamento.findFirst({
+    where: {
+      localId,
+      ...(idExclusao && { id: idExclusao }),
+      status: { notIn: ['CANCELADO'] },
+      OR: overlapWhere,
+    },
+  })
+  if (conflitoLocal) return { ok: false, motivo: 'Local já está ocupado nesse horário' }
+
+  return { ok: true }
+}
+
 export async function getHorariosDisponiveis(
   profissionalId: string,
   data: string // 'YYYY-MM-DD'
@@ -73,6 +154,9 @@ export async function getHorariosDisponiveis(
  * Encontra o primeiro local físico disponível para um horário.
  * Locais tipo ONLINE ou DOMICILIAR não são retornados aqui —
  * eles nunca ficam "ocupados" por outros agendamentos.
+ *
+ * TODO(reservas): considerar ReservaLocal ao buscar locais livres —
+ * atualmente pode sugerir local com reserva ativa de outro profissional.
  */
 export async function getLocalDisponivel(inicio: Date, fim: Date): Promise<string | null> {
   const db = getTenantDb()
