@@ -14,10 +14,11 @@ export async function criarLocal(data: unknown): Promise<{ error?: string }> {
       await db.local.create({
         data: {
           ...parsed.data,
-          descricao:  parsed.data.descricao  || null,
-          endereco:   parsed.data.endereco   || null,
-          linkPadrao: parsed.data.linkPadrao || null,
-          instrucoes: parsed.data.instrucoes || null,
+          descricao:   parsed.data.descricao  || null,
+          endereco:    parsed.data.endereco   || null,
+          plataforma:  parsed.data.plataforma || null,
+          linkPadrao:  parsed.data.linkPadrao || null,
+          instrucoes:  parsed.data.instrucoes || null,
         },
       })
       revalidatePath('/locais')
@@ -39,10 +40,11 @@ export async function atualizarLocal(id: string, data: unknown): Promise<{ error
         where: { id },
         data: {
           ...parsed.data,
-          descricao:  parsed.data.descricao  || null,
-          endereco:   parsed.data.endereco   || null,
-          linkPadrao: parsed.data.linkPadrao || null,
-          instrucoes: parsed.data.instrucoes || null,
+          descricao:   parsed.data.descricao  || null,
+          endereco:    parsed.data.endereco   || null,
+          plataforma:  parsed.data.plataforma || null,
+          linkPadrao:  parsed.data.linkPadrao || null,
+          instrucoes:  parsed.data.instrucoes || null,
         },
       })
       revalidatePath('/locais')

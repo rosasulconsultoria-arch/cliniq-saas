@@ -100,10 +100,16 @@ export function LocalForm({ defaultValues, isEdit = false, id }: Props) {
       )}
 
       {tipo === 'ONLINE' && (
-        <div className="space-y-1.5">
-          <Label htmlFor="linkPadrao">Link de videoconferência</Label>
-          <Input id="linkPadrao" placeholder="https://meet.google.com/..." {...register('linkPadrao')} />
-          {errors.linkPadrao && <p className="text-xs text-destructive">{errors.linkPadrao.message}</p>}
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="plataforma">Plataforma</Label>
+            <Input id="plataforma" placeholder="Ex: Google Meet, Zoom, Teams..." {...register('plataforma')} />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="linkPadrao">Link de videoconferência</Label>
+            <Input id="linkPadrao" placeholder="https://meet.google.com/..." {...register('linkPadrao')} />
+            {errors.linkPadrao && <p className="text-xs text-destructive">{errors.linkPadrao.message}</p>}
+          </div>
         </div>
       )}
 

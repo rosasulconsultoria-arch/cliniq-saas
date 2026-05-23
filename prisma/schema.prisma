@@ -194,6 +194,7 @@ model Local {
   capacidade  Int?
   descricao   String?
   endereco    String?   // SALA ou EXTERNO
+  plataforma  String?   // ONLINE — nome da plataforma (Google Meet, Zoom, etc.)
   linkPadrao  String?   // ONLINE — link de videoconferência padrão
   instrucoes  String?   // qualquer tipo — exibidas ao paciente
   ativa       Boolean   @default(true)

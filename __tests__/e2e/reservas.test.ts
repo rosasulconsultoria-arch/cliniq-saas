@@ -30,14 +30,15 @@ beforeAll(async () => {
   prof2AId = p2A.id
   prof1BId = p1B.id
 
-  const [lA] = await db.local.findMany({ where: { tenantId: tidA } })
-  const [lB] = await db.local.findMany({ where: { tenantId: tidB } })
+  const lA = await db.local.findFirst({ where: { tenantId: tidA, nome: 'Local A1' } })
+  const lB = await db.local.findFirst({ where: { tenantId: tidB, nome: 'Local B1' } })
+  if (!lA || !lB) throw new Error('Locais semeados não encontrados. Rode setup primeiro.')
   localAId = lA.id
   localBId = lB.id
 }, 30_000)
 
 afterEach(async () => {
-  await db.reservaLocal.deleteMany({ where: { tenantId: { in: [tidA, tidB] } } })
+  await db.reservaLocal.deleteMany({ where: { localId: { in: [localAId, localBId] } } })
 })
 
 // ═══════════════════════════════════════════════════════════════════════════

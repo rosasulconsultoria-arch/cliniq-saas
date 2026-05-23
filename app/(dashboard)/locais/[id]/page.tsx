@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft } from 'lucide-react'
+import { ChevronLeft, CalendarRange } from 'lucide-react'
 import { getTenantDb } from '@/lib/prisma'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -27,20 +27,29 @@ export default async function EditarLocalPage({ params }: Props) {
         </div>
       </div>
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Dados do Local</CardTitle>
-          <CardDescription>Campos marcados com * são obrigatórios</CardDescription>
+        <CardHeader className="flex-row items-start justify-between space-y-0">
+          <div>
+            <CardTitle className="text-base">Dados do Local</CardTitle>
+            <CardDescription>Campos marcados com * são obrigatórios</CardDescription>
+          </div>
+          <Button variant="outline" size="sm" asChild>
+            <Link href={`/locais/${params.id}/reservas`}>
+              <CalendarRange className="mr-2 h-4 w-4" />
+              Reservas
+            </Link>
+          </Button>
         </CardHeader>
         <CardContent>
           <LocalForm
             defaultValues={{
               nome:        local.nome,
               tipo:        local.tipo,
-              capacidade:  local.capacidade ?? undefined,
-              descricao:   local.descricao  ?? '',
-              endereco:    local.endereco   ?? '',
-              linkPadrao:  local.linkPadrao ?? '',
-              instrucoes:  local.instrucoes ?? '',
+              capacidade:  local.capacidade  ?? undefined,
+              descricao:   local.descricao   ?? '',
+              endereco:    local.endereco    ?? '',
+              plataforma:  local.plataforma  ?? '',
+              linkPadrao:  local.linkPadrao  ?? '',
+              instrucoes:  local.instrucoes  ?? '',
               ativa:       local.ativa,
             }}
             isEdit

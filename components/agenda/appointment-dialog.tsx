@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import { Loader2, UserPlus, X, RefreshCw } from 'lucide-react'
 import { AgendamentoSchema, type AgendamentoFormData } from '@/lib/schemas/agendamento'
 import { criarAgendamento } from '@/app/(dashboard)/agenda/actions'
+import { getReservaStatus } from '@/app/(dashboard)/locais/[id]/reservas/actions'
 import { criarPacienteRapido } from '@/app/(dashboard)/pacientes/actions'
 import { mascaraTelefone } from '@/lib/utils'
 import { PacienteCombobox } from './paciente-combobox'
@@ -61,6 +62,7 @@ export function AgendamentoDialog({ open, onClose, slot, profissionais, locais, 
   const [showCadastro, setShowCadastro] = useState(false)
   const [nomeCadastro, setNomeCadastro] = useState('')
   const [telefoneCadastro, setTelefoneCadastro] = useState('')
+  const [reservaStatus, setReservaStatus] = useState<{ minha: boolean; nomeProfissional: string } | null | 'loading'>(null)
 
   const form = useForm<AgendamentoFormData>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -90,6 +92,8 @@ export function AgendamentoDialog({ open, onClose, slot, profissionais, locais, 
   const formaPagamento = watch('formaPagamento')
   const recorrente = watch('recorrente')
   const totalRecorrencias = watch('totalRecorrencias')
+  const localId = watch('localId')
+  const duracao = watch('duracao')
   const isCartao = formaPagamento === 'CARTAO_CREDITO' || formaPagamento === 'CARTAO_DEBITO'
   const isCredito = formaPagamento === 'CARTAO_CREDITO'
 
@@ -120,6 +124,21 @@ export function AgendamentoDialog({ open, onClose, slot, profissionais, locais, 
     if (prof?.valorConsultaPadrao) setValue('valor', prof.valorConsultaPadrao)
   }, [profissionalId, profissionais, setValue])
 
+  // Badge: reserva status reativo a local/profissional/data/horário
+  useEffect(() => {
+    if (!localId || !profissionalId || !selectedDate || !selectedTime) {
+      setReservaStatus(null)
+      return
+    }
+    setReservaStatus('loading')
+    const diaSemana = new Date(selectedDate + 'T12:00:00').getDay()
+    const horaInicio = selectedTime
+    const [h, m] = selectedTime.split(':').map(Number)
+    const totalMin = h * 60 + m + (duracao ?? 50)
+    const horaFim = `${String(Math.floor(totalMin / 60)).padStart(2, '0')}:${String(totalMin % 60).padStart(2, '0')}`
+    getReservaStatus(localId, profissionalId, diaSemana, horaInicio, horaFim).then(setReservaStatus)
+  }, [localId, profissionalId, selectedDate, selectedTime, duracao])
+
   // Reset on close
   useEffect(() => {
     if (!open) {
@@ -129,6 +148,7 @@ export function AgendamentoDialog({ open, onClose, slot, profissionais, locais, 
       setShowCadastro(false)
       setNomeCadastro('')
       setTelefoneCadastro('')
+      setReservaStatus(null)
     }
   }, [open, reset])
 
@@ -320,6 +340,19 @@ export function AgendamentoDialog({ open, onClose, slot, profissionais, locais, 
                 )}
               />
               {errors.localId && <p className="text-xs text-destructive">{errors.localId.message}</p>}
+              {reservaStatus === 'loading' && (
+                <p className="text-xs text-muted-foreground animate-pulse">Verificando reservas...</p>
+              )}
+              {reservaStatus && reservaStatus !== 'loading' && reservaStatus.minha && (
+                <p className="text-xs text-green-600 dark:text-green-400 font-medium">
+                  ✓ Você tem reserva neste horário
+                </p>
+              )}
+              {reservaStatus && reservaStatus !== 'loading' && !reservaStatus.minha && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                  ⚠ Local reservado para {reservaStatus.nomeProfissional} neste horário
+                </p>
+              )}
             </div>
           </div>
 

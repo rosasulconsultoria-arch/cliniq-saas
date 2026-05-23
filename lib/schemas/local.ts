@@ -9,6 +9,7 @@ export const LocalSchema = z.object({
   capacidade:  z.coerce.number().int().min(1).optional(),
   descricao:   z.string().optional(),
   endereco:    z.string().optional(),
+  plataforma:  z.string().optional(),
   linkPadrao:  z.string().url('URL inválida').optional().or(z.literal('')),
   instrucoes:  z.string().optional(),
   ativa:       z.boolean().default(true),
