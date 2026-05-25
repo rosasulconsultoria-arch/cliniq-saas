@@ -544,3 +544,38 @@ model Aluguel {
   @@index([profissionalId])
   @@index([mesReferencia])
 }
+
+model SignupDraft {
+  id              String         @id @default(cuid())
+
+  // Tela 0 — Plano
+  planoId         PlanoTenant?
+  periodicidade   Periodicidade?
+
+  // Tela 1 — Clínica
+  nomeClinica     String?
+  slug            String?        @unique
+  especialidade   String?
+  telefone        String?
+
+  // Tela 2 — Admin
+  nomeAdmin       String?
+  emailAdmin      String?
+  passwordHash    String?
+  emailVerificado Boolean        @default(false)
+  emailToken      String?        @unique
+  emailTokenExp   DateTime?
+
+  // Controle
+  step            Int            @default(0)
+  expiresAt       DateTime
+  lastEmailSentAt DateTime?
+  finalized       Boolean        @default(false)
+  finalizing      Boolean        @default(false)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([slug])
+  @@index([emailToken])
+  @@index([expiresAt])
+}

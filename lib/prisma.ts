@@ -11,14 +11,14 @@
  * A unicidade do campo original (UUID/cuid) garante ≤ 1 resultado por tenant.
  * Isso preserva a semântica correta sem type assertions no código de aplicação.
  *
- * Modelos excluídos da injeção: Tenant, Parcela, AgendamentoServico.
+ * Modelos excluídos da injeção: Tenant, Parcela, AgendamentoServico, SignupDraft.
  */
 
 import { db } from './db'
 import { getTenantId } from './tenant-context'
 
 // Modelos que não possuem tenantId no schema — ignorados pela extensão
-const SKIP_TENANT = new Set(['Tenant', 'Parcela', 'AgendamentoServico'])
+const SKIP_TENANT = new Set(['Tenant', 'Parcela', 'AgendamentoServico', 'SignupDraft'])
 
 // Tipo interno mínimo para manipulação genérica de args dentro da extensão.
 // Confinado a este arquivo — código de aplicação usa os tipos Prisma normais.
