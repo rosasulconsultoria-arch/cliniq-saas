@@ -1,5 +1,26 @@
 # Dívida Técnica
 
+## [CRÍTICO] Lote E3 — Bloqueadores de produção
+
+- **[CRÍTICO] PCI DSS — tokenização de cartão obrigatória antes de produção real**
+  Implementação atual: dados do cartão passam pelo servidor Next.js (PCI DSS SAQ D).
+  Solução: tokenização frontend via Asaas.js (verificar disponibilidade Production) ou equivalente.
+  Bloqueador absoluto antes do primeiro pagamento real de cliente.
+  Ver `ARCHITECTURE.md` § E3.1.
+
+- **[CRÍTICO] Webhook secret Asaas — configurar após primeiro deploy**
+  `ASAAS_WEBHOOK_SECRET` está vazio — webhook aceita requests sem validação.
+  Ação: gerar secret no painel Asaas → Configurações → Notificações → Webhooks,
+  depois adicionar como variável de ambiente no Vercel.
+  Ver `ARCHITECTURE.md` § E3.3.
+
+- **[ALTO] next-auth travado em beta.31 — travar versão no package.json**
+  Remover `^` de `"next-auth": "^5.0.0-beta.31"` para evitar upgrade automático.
+  O JWT encode manual em `finalizarSignup` depende do formato desta versão.
+  Ver `ARCHITECTURE.md` § E3.2.
+
+---
+
 ## Fase 2
 
 - **Atualizar `getLocalDisponivel` para considerar `ReservaLocal`** — atualmente pode sugerir local com reserva ativa de outro profissional. O agendamento será bloqueado na validação, mas a UX fica ruim (local sugerido e depois recusado). Ver `lib/agendamento.ts`.

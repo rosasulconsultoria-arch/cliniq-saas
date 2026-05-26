@@ -6,6 +6,7 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     globalSetup: './__tests__/e2e/setup.ts',
+    setupFiles: ['./__tests__/e2e/load-env.ts'],
     // Vitest 4: singleFork é top-level (poolOptions foi removido)
     pool: 'forks',
     singleFork: true,

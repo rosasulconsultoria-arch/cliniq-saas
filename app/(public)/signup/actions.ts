@@ -7,13 +7,25 @@ import {
   getCurrentDraftId,
   setCurrentDraftId,
   updateDraft,
+  clearDraft,
 } from '@/lib/signup/state'
 import { planoSchema, clinicaSchema, adminSchema } from '@/lib/signup/validators'
 import { isReservedSlug, generateSlugSuggestions } from '@/lib/signup/slug'
 import { sendVerificationEmail } from '@/lib/signup/email-templates'
+import {
+  createCustomer,
+  createSubscription,
+  deleteCustomer,
+  calcularNextDueDate,
+  calcularTrialEndsAt,
+  traduzirErroAsaas,
+} from '@/lib/asaas-saas'
+import { PLANOS } from '@/lib/plans'
+import { encode } from 'next-auth/jwt'
+import { cookies } from 'next/headers'
 import bcrypt from 'bcryptjs'
 import crypto from 'crypto'
-import type { SignupDraft } from '@prisma/client'
+import type { SignupDraft, Periodicidade } from '@prisma/client'
 
 // ─── 1. escolherPlano ─────────────────────────────────────────────────────────
 
@@ -224,6 +236,239 @@ export async function verificarEmailToken(
   await setCurrentDraftId(draft.id)
 
   return { success: true, draftId: draft.id }
+}
+
+// ─── 8. finalizarSignup ───────────────────────────────────────────────────────
+
+export type FinalizarSignupInput = {
+  holderName: string
+  number: string
+  expiryMonth: string
+  expiryYear: string
+  ccv: string
+  cpfCnpj: string
+  postalCode: string
+  addressNumber: string
+  phone: string
+}
+
+export type FinalizarSignupResult =
+  | { success: true; slug: string; redirectUrl: string }
+  | { success: false; error: string; campo?: string }
+
+export async function finalizarSignup(
+  dadosCartao: FinalizarSignupInput
+): Promise<FinalizarSignupResult> {
+  // 1. Verificar draft
+  const draftId = await getCurrentDraftId()
+  if (!draftId) return { success: false, error: 'Sessão expirada. Inicie o cadastro novamente.' }
+
+  const draft = await getDraft(draftId)
+  if (!draft) return { success: false, error: 'Sessão não encontrada. Inicie o cadastro novamente.' }
+
+  // 2. Idempotência — draft já finalizado
+  if (draft.finalized) {
+    const tenant = await db.tenant.findFirst({ where: { slug: draft.slug! } })
+    if (tenant) return { success: true, slug: tenant.slug, redirectUrl: `/signup/sucesso` }
+  }
+
+  // 3. Verificar email verificado
+  if (!draft.emailVerificado) {
+    return { success: false, error: 'E-mail não verificado. Verifique sua caixa de entrada.' }
+  }
+
+  // 4. Verificar dados obrigatórios do draft
+  if (!draft.planoId || !draft.periodicidade || !draft.slug || !draft.nomeClinica ||
+      !draft.nomeAdmin || !draft.emailAdmin || !draft.passwordHash) {
+    return { success: false, error: 'Cadastro incompleto. Revise os passos anteriores.' }
+  }
+
+  // 5. Lock de finalização (idempotência contra double-submit)
+  if (draft.finalizing) {
+    const lockAge = Date.now() - draft.updatedAt.getTime()
+    if (lockAge < 5 * 60 * 1000) {
+      return { success: false, error: 'Processamento em andamento. Aguarde alguns instantes.' }
+    }
+  }
+
+  await updateDraft(draftId, { finalizing: true })
+
+  const planoConfig = PLANOS[draft.planoId]
+  const periodicidade = draft.periodicidade as Periodicidade
+  const cycle = periodicidade === 'ANUAL' ? 'YEARLY' : 'MONTHLY'
+  const valueCents = periodicidade === 'ANUAL'
+    ? planoConfig.precos.anual.cents
+    : planoConfig.precos.mensal.cents
+  const nextDueDate = calcularNextDueDate(14)
+  const trialEndsAt = calcularTrialEndsAt(14)
+
+  // 6. Criar ou reutilizar customer Asaas
+  let asaasCustomerId = draft.asaasCustomerId
+
+  if (!asaasCustomerId) {
+    const customerResult = await createCustomer({
+      name: draft.nomeClinica,
+      email: draft.emailAdmin,
+      cpfCnpj: dadosCartao.cpfCnpj,
+      phone: dadosCartao.phone,
+      externalReference: draftId,
+    })
+
+    if (!customerResult.ok) {
+      await updateDraft(draftId, { finalizing: false })
+      return { success: false, error: 'Erro ao registrar dados. Tente novamente.' }
+    }
+
+    asaasCustomerId = customerResult.data.id
+    await updateDraft(draftId, { asaasCustomerId })
+  }
+
+  // 7. Criar subscription Asaas
+  let asaasSubscriptionId = draft.asaasSubscriptionId
+
+  if (!asaasSubscriptionId) {
+    const subscriptionResult = await createSubscription({
+      customer: asaasCustomerId,
+      billingType: 'CREDIT_CARD',
+      value: valueCents,
+      nextDueDate,
+      cycle,
+      description: `Cliniq ${planoConfig.nome} — ${draft.nomeClinica}`,
+      externalReference: `draft:${draftId}`,
+      creditCard: {
+        holderName: dadosCartao.holderName,
+        number: dadosCartao.number,
+        expiryMonth: dadosCartao.expiryMonth,
+        expiryYear: dadosCartao.expiryYear,
+        ccv: dadosCartao.ccv,
+      },
+      creditCardHolderInfo: {
+        name: dadosCartao.holderName,
+        email: draft.emailAdmin,
+        cpfCnpj: dadosCartao.cpfCnpj,
+        postalCode: dadosCartao.postalCode,
+        addressNumber: dadosCartao.addressNumber,
+        phone: dadosCartao.phone,
+      },
+    })
+
+    if (!subscriptionResult.ok) {
+      // Rollback: deletar customer criado agora
+      await deleteCustomer(asaasCustomerId).catch((e) =>
+        console.error('[finalizarSignup] falha ao deletar customer após erro:', e)
+      )
+      await updateDraft(draftId, { finalizing: false, asaasCustomerId: null })
+
+      // Extrair código de erro do Asaas para mensagem amigável
+      const details = subscriptionResult.details as any
+      const errorCode = details?.body?.errors?.[0]?.code ?? details?.body?.errors?.[0]?.description ?? ''
+      return { success: false, error: traduzirErroAsaas(errorCode) }
+    }
+
+    asaasSubscriptionId = subscriptionResult.data.id
+    await updateDraft(draftId, { asaasSubscriptionId })
+  }
+
+  // 8. Transação de banco: criar Tenant + User
+  let createdTenant: { id: string; slug: string }
+  let createdUserId: string
+
+  try {
+    const result = await db.$transaction(async (tx) => {
+      const tenant = await tx.tenant.create({
+        data: {
+          slug: draft.slug!,
+          nome: draft.nomeClinica!,
+          plano: draft.planoId!,
+          periodicidade: draft.periodicidade!,
+          status: 'TRIAL',
+          subscriptionStatus: 'TRIALING',
+          trialEndsAt,
+          asaasCustomerId,
+          asaasSubscriptionId,
+        },
+      })
+
+      const user = await tx.user.create({
+        data: {
+          tenantId: tenant.id,
+          name: draft.nomeAdmin!,
+          email: draft.emailAdmin!,
+          passwordHash: draft.passwordHash!,
+          role: 'ADMIN',
+          mustChangePassword: false,
+        },
+      })
+
+      return { tenant, user }
+    })
+
+    createdTenant = result.tenant
+    createdUserId = result.user.id
+  } catch (err: unknown) {
+    // Rollback Asaas
+    await deleteCustomer(asaasCustomerId).catch((e) =>
+      console.error('[finalizarSignup] falha ao deletar customer no rollback DB:', e)
+    )
+    await updateDraft(draftId, { finalizing: false, asaasCustomerId: null, asaasSubscriptionId: null })
+
+    const prismaErr = err as any
+    if (prismaErr?.code === 'P2002') {
+      return {
+        success: false,
+        error: 'Esse endereço foi escolhido por outra clínica. Por favor escolha outro.',
+        campo: 'slug',
+      }
+    }
+
+    console.error('[finalizarSignup] erro no transaction:', err)
+    return { success: false, error: 'Erro interno ao criar sua conta. Tente novamente.' }
+  }
+
+  // 9. Marcar draft como finalizado e limpar cookie
+  await updateDraft(draftId, { finalized: true, finalizing: false })
+  await clearDraft()
+
+  // 10. Criar sessão Auth.js via JWT encode (sem redirect — usuário já logado)
+  try {
+    const isProduction = process.env.NODE_ENV === 'production'
+    const cookieName = isProduction
+      ? '__Secure-next-auth.session-token'
+      : 'next-auth.session-token'
+
+    const sessionToken = await encode({
+      token: {
+        sub: createdUserId,
+        id: createdUserId,
+        name: draft.nomeAdmin!,
+        email: draft.emailAdmin!,
+        role: 'ADMIN',
+        tenantId: createdTenant.id,
+        mustChangePassword: false,
+      },
+      secret: process.env.NEXTAUTH_SECRET!,
+      maxAge: 30 * 24 * 60 * 60,
+    })
+
+    const cookieStore = await cookies()
+    cookieStore.set(cookieName, sessionToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+      secure: isProduction,
+      maxAge: 30 * 24 * 60 * 60,
+      domain: isProduction ? `.${process.env.BASE_DOMAIN ?? 'cliniq.com.br'}` : undefined,
+    })
+  } catch (err) {
+    // Sessão não criada, mas signup foi bem-sucedido — usuário precisará logar manualmente
+    console.error('[finalizarSignup] falha ao criar sessão JWT:', err)
+  }
+
+  return {
+    success: true,
+    slug: createdTenant.slug,
+    redirectUrl: `/signup/sucesso`,
+  }
 }
 
 // ─── 7. getCurrentDraftStatus ─────────────────────────────────────────────────

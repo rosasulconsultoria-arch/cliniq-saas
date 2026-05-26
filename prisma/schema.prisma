@@ -70,8 +70,10 @@ model Tenant {
   periodicidade       Periodicidade @default(MENSAL) // default técnico; tenants novos definem na escolha de plano (Lote E)
   status              StatusTenant @default(TRIAL)
   trialEndsAt         DateTime?
-  asaasCustomerId     String?
-  asaasSubscriptionId String?
+  asaasCustomerId     String?      @unique
+  asaasSubscriptionId String?      @unique
+  subscriptionStatus  String?      // 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'EXPIRED'
+  avisoPagamento      Boolean      @default(false)
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
 
@@ -566,6 +568,10 @@ model SignupDraft {
   emailToken      String?        @unique
   emailTokenExp   DateTime?
   emailTokenUsed  Boolean        @default(false)
+
+  // Asaas — criados durante finalização (para idempotência em retries)
+  asaasCustomerId    String?
+  asaasSubscriptionId String?
 
   // Controle
   step            Int            @default(0)

@@ -697,3 +697,83 @@ await db.$transaction(async (tx) => {
 
 *Documento gerado em: 2026-05-21*
 *Base: análise de `prisma/schema.prisma` (20 models), `lib/auth.ts`, `lib/db.ts` e `SAAS-BRIEF.md`*
+
+---
+
+## Decisões do Lote E3 — Integração Asaas B2B + Finalização de Signup (2026-05-26)
+
+### E3.1 — Tokenização de cartão: server-side (Opção A)
+
+**Problema:** O Asaas.js (SDK de tokenização frontend) retorna `302 → /login/auth` em ambas as URLs testadas (sandbox e produção). O SDK não é publicamente acessível sem sessão autenticada no painel Asaas.
+
+**Decisão:** Implementar via API direct server-side (`lib/asaas-saas.ts`). Dados do cartão trafegam pelo servidor Next.js antes de chegar ao Asaas.
+
+**⚠️ DÍVIDA TÉCNICA CRÍTICA — PCI DSS:**
+> A implementação atual envia dados de cartão pelo servidor (PCI DSS SAQ D requerido para produção com pagamentos reais).
+> **Solução obrigatória antes de lançamento:** tokenização via Asaas.js frontend (verificar disponibilidade na versão Production da API quando o acesso ao SDK for viabilizado) ou alternativa equivalente (ex: Stripe Elements, Pagar.me.js).
+> **Bloqueador de produção.** Ver `TODO.md` item `[CRÍTICO] PCI DSS`.
+
+**Contexto:** Esta fase é exclusivamente para validação de produto em sandbox. Nenhum pagamento real de cliente ocorre nesta fase.
+
+---
+
+### E3.2 — Login automático pós-signup: JWT encode manual
+
+**Problema:** O provider `Credentials` do Auth.js exige `x-tenant-slug` no header (injetado pelo middleware quando o usuário está em `neuroconexao.cliniq.com.br`). Durante o signup, o usuário está em `cliniq.com.br` — sem subdomínio, sem esse header. Não é possível chamar `signIn('credentials', ...)` no contexto do signup.
+
+**Decisão:** Após criar o `User` e `Tenant` no banco, `finalizarSignup` chama `encode` de `next-auth/jwt` para gerar um JWT com os dados do usuário, e seta o cookie de sessão manualmente.
+
+```ts
+// Em produção: '__Secure-next-auth.session-token'
+// Em desenvolvimento: 'next-auth.session-token'
+// domain: '.cliniq.com.br' em produção (cross-subdomain)
+```
+
+**⚠️ DÍVIDA TÉCNICA:**
+> `next-auth` está fixado em `5.0.0-beta.31`. O formato do cookie e a chave de encoding podem mudar em versões futuras do Auth.js v5 (ainda em beta). Atualizar com cautela — testar login após cada upgrade de versão.
+> Remover o `^` do package.json para travar a versão: `"next-auth": "5.0.0-beta.31"`.
+
+---
+
+### E3.3 — Webhook Asaas sem secret inicial
+
+**Problema:** O secret do webhook Asaas é gerado/configurado no painel Asaas após o endpoint estar deployado — frango-e-ovo.
+
+**Decisão:** `ASAAS_WEBHOOK_SECRET` vazio é permitido durante desenvolvimento. Quando vazio, o endpoint aceita requests sem validação de assinatura (com log de warning). Em produção, o secret DEVE ser configurado.
+
+**TODO de produção:** Configurar `ASAAS_WEBHOOK_SECRET` no Vercel Environment Variables após o primeiro deploy. O valor é gerado no painel Asaas em Configurações → Notificações → Webhooks.
+
+---
+
+### E3.4 — Separação B2C vs B2B no Asaas
+
+O projeto usa duas integrações Asaas distintas:
+
+| | B2C (`lib/asaas.ts`) | B2B (`lib/asaas-saas.ts`) |
+|---|---|---|
+| **Quem cobra?** | Clínica cobra paciente | Cliniq cobra a clínica |
+| **API Key** | `Profissional.asaasApiKey` (por profissional) | `ASAAS_API_KEY` (env — conta B2B) |
+| **Uso** | Geração de cobranças de consultas | Assinaturas SaaS mensais/anuais |
+| **Conta Asaas** | Conta de cada profissional | Conta própria do SaaS |
+
+**Regra:** nunca misturar as duas integrações. `lib/asaas.ts` e `lib/asaas-saas.ts` são independentes.
+
+---
+
+### E3.5 — Mapeamento subscriptionStatus → StatusTenant
+
+O campo `Tenant.subscriptionStatus` (string livre, valores do Asaas) é separado de `Tenant.status` (enum Prisma `StatusTenant`). O mapeamento está em `lib/asaas-saas.ts:mapearStatusAsaas()`:
+
+| subscriptionStatus | StatusTenant | avisoPagamento |
+|---|---|---|
+| `TRIALING` | `TRIAL` | false |
+| `ACTIVE` | `ATIVO` | false |
+| `PAST_DUE` | `ATIVO` (não bloqueia) | **true** |
+| `CANCELED` | `CANCELADO` | false |
+| `EXPIRED` | `CANCELADO` | false |
+
+**Decisão de produto:** cobrança vencida (`PAST_DUE`) não bloqueia o tenant imediatamente — apenas ativa o campo `avisoPagamento`. Bloqueio ocorre apenas em `CANCELED`/`EXPIRED`, via webhook `SUBSCRIPTION_CANCELED`.
+
+---
+
+*Lote E3 documentado em: 2026-05-26*
