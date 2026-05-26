@@ -40,6 +40,7 @@ export interface AsaasSubscription {
   cycle: string
   description?: string
   externalReference?: string
+  creditCardNumber?: string  // ex: "xxxx xxxx xxxx 1234" (mascarado pelo Asaas)
 }
 
 export type AsaasResult<T> =
@@ -165,6 +166,41 @@ export async function cancelSubscription(
 ): Promise<AsaasResult<{ deleted: boolean }>> {
   return asaasFetch<{ deleted: boolean }>(`/subscriptions/${subscriptionId}`, {
     method: 'DELETE',
+  })
+}
+
+export async function restoreSubscription(
+  subscriptionId: string
+): Promise<AsaasResult<AsaasSubscription>> {
+  return asaasFetch<AsaasSubscription>(`/subscriptions/${subscriptionId}/restore`, {
+    method: 'POST',
+  })
+}
+
+export async function updateSubscriptionCreditCard(
+  subscriptionId: string,
+  creditCard: AsaasCreditCard,
+  creditCardHolderInfo: AsaasCreditCardHolderInfo & { email: string }
+): Promise<AsaasResult<{ creditCardToken: string; creditCardNumber: string }>> {
+  return asaasFetch(`/subscriptions/${subscriptionId}/creditCard`, {
+    method: 'POST',
+    body: JSON.stringify({
+      creditCard: {
+        holderName: creditCard.holderName,
+        number: creditCard.number.replace(/\s/g, ''),
+        expiryMonth: creditCard.expiryMonth,
+        expiryYear: creditCard.expiryYear,
+        ccv: creditCard.ccv,
+      },
+      creditCardHolderInfo: {
+        name: creditCardHolderInfo.name,
+        email: creditCardHolderInfo.email,
+        cpfCnpj: creditCardHolderInfo.cpfCnpj.replace(/\D/g, ''),
+        postalCode: creditCardHolderInfo.postalCode.replace(/\D/g, ''),
+        addressNumber: creditCardHolderInfo.addressNumber,
+        phone: creditCardHolderInfo.phone.replace(/\D/g, ''),
+      },
+    }),
   })
 }
 

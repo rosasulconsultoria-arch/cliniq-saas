@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidateTag } from 'next/cache'
 import { db } from '@/lib/db'
 import { validateWebhookSignature, mapearStatusAsaas } from '@/lib/asaas-saas'
 import { StatusTenant } from '@prisma/client'
@@ -50,17 +51,20 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           subscriptionStatus: 'ACTIVE',
           status: StatusTenant.ATIVO,
           avisoPagamento: false,
+          avisoPagamentoDesde: 'CLEAR',
         })
         break
       }
 
       case 'PAYMENT_OVERDUE': {
         // Cobrança vencida → aviso, mas NÃO bloquear imediatamente
+        // avisoPagamentoDesde só é setado na primeira ocorrência — preserva o timestamp original
         const subscriptionId = payment?.subscription as string | undefined
         const externalRef = payment?.externalReference as string | undefined
 
         await atualizarTenantPorSubscription(subscriptionId, externalRef, {
           avisoPagamento: true,
+          avisoPagamentoDesde: 'SET_IF_NULL',
         })
         break
       }
@@ -103,6 +107,7 @@ async function atualizarTenantPorSubscription(
     subscriptionStatus: string
     status: StatusTenant
     avisoPagamento: boolean
+    avisoPagamentoDesde: 'SET_IF_NULL' | 'CLEAR'
   }>
 ): Promise<void> {
   let tenant = null
@@ -124,10 +129,23 @@ async function atualizarTenantPorSubscription(
     return
   }
 
+  const { avisoPagamentoDesde, ...camposRestantes } = campos
+
+  const data: Record<string, unknown> = { ...camposRestantes }
+
+  if (avisoPagamentoDesde === 'SET_IF_NULL' && !tenant.avisoPagamentoDesde) {
+    data.avisoPagamentoDesde = new Date()
+  } else if (avisoPagamentoDesde === 'CLEAR') {
+    data.avisoPagamentoDesde = null
+  }
+
   await db.tenant.update({
     where: { id: tenant.id },
-    data: campos,
+    data,
   })
 
-  console.log(`[saas-webhook] tenant ${tenant.slug} atualizado:`, campos)
+  // Invalida o cache do middleware para que a mudança de status reflita imediatamente
+  revalidateTag('tenants')
+
+  console.log(`[saas-webhook] tenant ${tenant.slug} atualizado:`, data)
 }

@@ -5,10 +5,8 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Lock, CreditCard, Loader2 } from 'lucide-react'
-import { finalizarSignup } from '../actions'
+import { Lock, CreditCard, Loader2, CheckCircle2 } from 'lucide-react'
 import {
   mascaraCartao,
   mascaraValidade,
@@ -16,17 +14,12 @@ import {
   mascaraCEP,
   mascaraTelefone,
 } from '@/lib/cartao/masks'
+import { atualizarCartao } from '../actions'
 
-// ─── Componente ───────────────────────────────────────────────────────────────
-
-interface CartaoFormProps {
-  nomePlano: string
-  valorFormatado: string
-}
-
-export function CartaoForm({ nomePlano, valorFormatado }: CartaoFormProps) {
+export function AtualizarCartaoForm() {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  const [sucesso, setSucesso] = useState(false)
 
   const [holderName, setHolderName] = useState('')
   const [numero, setNumero] = useState('')
@@ -36,7 +29,6 @@ export function CartaoForm({ nomePlano, valorFormatado }: CartaoFormProps) {
   const [cep, setCep] = useState('')
   const [enderecoNum, setEnderecoNum] = useState('')
   const [telefone, setTelefone] = useState('')
-  const [termos, setTermos] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
 
   const validadePartes = validade.replace(/\D/g, '')
@@ -52,15 +44,14 @@ export function CartaoForm({ nomePlano, valorFormatado }: CartaoFormProps) {
     cpf.replace(/\D/g, '').length === 11 &&
     cep.replace(/\D/g, '').length === 8 &&
     enderecoNum.trim().length >= 1 &&
-    telefone.replace(/\D/g, '').length >= 10 &&
-    termos
+    telefone.replace(/\D/g, '').length >= 10
 
   const handleSubmit = () => {
     if (!formValido || isPending) return
     setErro(null)
 
     startTransition(async () => {
-      const result = await finalizarSignup({
+      const result = await atualizarCartao({
         holderName: holderName.trim(),
         number: numero.replace(/\s/g, ''),
         expiryMonth,
@@ -73,11 +64,22 @@ export function CartaoForm({ nomePlano, valorFormatado }: CartaoFormProps) {
       })
 
       if (result.success) {
-        router.push('/signup/sucesso')
+        setSucesso(true)
+        setTimeout(() => router.push('/billing'), 2000)
       } else {
-        setErro(result.error)
+        setErro(result.error ?? 'Erro ao atualizar cartão')
       }
     })
+  }
+
+  if (sucesso) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-8 text-center">
+        <CheckCircle2 className="h-12 w-12 text-green-500" />
+        <p className="font-semibold">Cartão atualizado com sucesso!</p>
+        <p className="text-sm text-muted-foreground">Redirecionando...</p>
+      </div>
+    )
   }
 
   return (
@@ -86,7 +88,7 @@ export function CartaoForm({ nomePlano, valorFormatado }: CartaoFormProps) {
       <div className="rounded-xl border bg-card p-6">
         <div className="mb-4 flex items-center gap-2">
           <CreditCard className="h-4 w-4 text-muted-foreground" />
-          <h2 className="font-semibold">Dados do cartão</h2>
+          <h2 className="font-semibold">Novo cartão</h2>
         </div>
 
         <div className="grid gap-4">
@@ -201,28 +203,12 @@ export function CartaoForm({ nomePlano, valorFormatado }: CartaoFormProps) {
         </div>
       </div>
 
-      {/* Erro */}
       {erro && (
         <Alert variant="destructive">
           <AlertDescription>{erro}</AlertDescription>
         </Alert>
       )}
 
-      {/* Termos */}
-      <div className="flex items-start gap-3">
-        <Checkbox
-          id="termos"
-          checked={termos}
-          onCheckedChange={(v) => setTermos(v === true)}
-          disabled={isPending}
-        />
-        <Label htmlFor="termos" className="cursor-pointer text-sm leading-snug text-muted-foreground">
-          Confirmo que entendi que serei cobrado(a) {valorFormatado} após o trial de 14 dias do
-          plano {nomePlano}, e posso cancelar a qualquer momento antes disso.
-        </Label>
-      </div>
-
-      {/* Submit */}
       <Button
         size="lg"
         className="w-full"
@@ -232,10 +218,10 @@ export function CartaoForm({ nomePlano, valorFormatado }: CartaoFormProps) {
         {isPending ? (
           <>
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Validando pagamento...
+            Atualizando cartão...
           </>
         ) : (
-          'Começar meu trial gratuito'
+          'Salvar novo cartão'
         )}
       </Button>
 

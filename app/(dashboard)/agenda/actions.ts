@@ -4,6 +4,7 @@ import { getTenantDb } from '@/lib/prisma'
 import { withTenantAction } from '@/lib/with-tenant-action'
 import { revalidatePath } from 'next/cache'
 import { AgendamentoSchema } from '@/lib/schemas/agendamento'
+import { verificarBillingAction } from '@/lib/billing/require-access'
 import { addMonths, format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { enviarConfirmacaoEmail, gerarLinkWhatsApp } from '@/lib/notificacoes'
@@ -104,6 +105,9 @@ export async function buscarPacientes(query: string) {
 
 export async function criarAgendamento(data: unknown): Promise<{ error?: string; whatsappLink?: string; count?: number }> {
   return withTenantAction(async () => {
+    const erroBilling = await verificarBillingAction()
+    if (erroBilling) return { error: erroBilling }
+
     const parsed = AgendamentoSchema.safeParse(data)
     if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Dados inválidos' }
 

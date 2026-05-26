@@ -21,3 +21,26 @@ export const getTenantBySlug = unstable_cache(
   ['tenant-by-slug'],
   { revalidate: 300, tags: ['tenants'] }
 )
+
+/**
+ * Busca campos de billing do tenant com cache curto (60s).
+ * Usado pelo middleware para verificar nível de acesso.
+ * Cache curto porque mudanças de status vêm via webhook que invalida a tag 'tenants'.
+ */
+export const getTenantBilling = unstable_cache(
+  async (slug: string) => {
+    return db.tenant.findFirst({
+      where: { slug },
+      select: {
+        id: true,
+        status: true,
+        trialEndsAt: true,
+        subscriptionStatus: true,
+        avisoPagamento: true,
+        avisoPagamentoDesde: true,
+      },
+    })
+  },
+  ['tenant-billing'],
+  { revalidate: 60, tags: ['tenants'] }
+)

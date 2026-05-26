@@ -4,6 +4,7 @@ import { getTenantDb } from '@/lib/prisma'
 import { withTenantAction } from '@/lib/with-tenant-action'
 import { revalidatePath } from 'next/cache'
 import { ProfissionalSchema } from '@/lib/schemas/profissional'
+import { verificarBillingAction } from '@/lib/billing/require-access'
 import { gerarSlug } from '@/lib/utils'
 import bcrypt from 'bcryptjs'
 import { db as globalDb } from '@/lib/db'
@@ -12,6 +13,9 @@ import { checkLimit } from '@/lib/plans'
 
 export async function criarProfissional(data: unknown): Promise<{ error?: string }> {
   return withTenantAction(async () => {
+    const erroBilling = await verificarBillingAction()
+    if (erroBilling) return { error: erroBilling }
+
     const parsed = ProfissionalSchema.safeParse(data)
     if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Dados inválidos' }
 

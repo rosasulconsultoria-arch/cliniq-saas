@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
 import { getTenantDb } from '@/lib/prisma'
 import { DashboardShell } from '@/components/layout/dashboard-shell'
+import { TrialBanner } from '@/components/billing/TrialBanner'
+import { PostSignupTour } from '@/components/onboarding/PostSignupTour'
 
 export default async function DashboardLayout({
   children,
@@ -22,18 +24,22 @@ export default async function DashboardLayout({
   const config = await db.configClinica.findFirst()
 
   return (
-    <DashboardShell
-      user={{
-        id: session.user.id,
-        name: session.user.name ?? 'Usuário',
-        email: session.user.email ?? '',
-        role: session.user.role,
-      }}
-      clinicaNome={config?.nome ?? 'Clínica'}
-      clinicaLogo={config?.logoBase64 ?? null}
-      clinicaCor={config?.corPrimaria ?? '#4f46e5'}
-    >
-      {children}
-    </DashboardShell>
+    <>
+      <TrialBanner />
+      <DashboardShell
+        user={{
+          id: session.user.id,
+          name: session.user.name ?? 'Usuário',
+          email: session.user.email ?? '',
+          role: session.user.role,
+        }}
+        clinicaNome={config?.nome ?? 'Clínica'}
+        clinicaLogo={config?.logoBase64 ?? null}
+        clinicaCor={config?.corPrimaria ?? '#4f46e5'}
+      >
+        <PostSignupTour />
+        {children}
+      </DashboardShell>
+    </>
   )
 }

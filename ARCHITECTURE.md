@@ -777,3 +777,80 @@ O campo `Tenant.subscriptionStatus` (string livre, valores do Asaas) é separado
 ---
 
 *Lote E3 documentado em: 2026-05-26*
+
+---
+
+## Decisões de runtime — Lote E4
+
+### E4.1 — Middleware migrado de Edge para Node.js
+
+**Problema:** O middleware original usava o runtime Edge (padrão Next.js). O enforcement de billing requer consultar o banco (`Tenant.trialEndsAt`, `subscriptionStatus`, `avisoPagamento`) via Prisma, que exige Node.js.
+
+**Decisão:** Adicionado `export const runtime = 'nodejs'` ao `middleware.ts`.
+
+**Trade-off aceito:** Latência adicional de ~50–200ms por request (cold start ocasional). Aceitável porque o app é UI-driven sem requisitos de edge. Se performance se tornar crítica no futuro, migrar o campo `acessoBilling` para o JWT (atualizado via webhook) e reverter para edge.
+
+**Data:** 2026-05-26
+
+---
+
+### E4.2 — Classificação de acesso de billing via lib/billing/status.ts
+
+**Decisão:** Lógica de classificação de tenant (`ALLOWED` / `WARNING` / `BLOCKED`) centralizada em `lib/billing/status.ts:classificarAcessoTenant()`. Pura, sem side-effects, testável sem banco.
+
+**Regras:**
+- `BLOCKED`: trial expirado sem ACTIVE, CANCELED/EXPIRED, ou PAST_DUE há > 7 dias
+- `WARNING`: trial nos últimos 7 dias, ou PAST_DUE dentro do grace period
+- `ALLOWED`: todos os outros casos
+
+**Cache de billing:** `getTenantBilling()` em `lib/tenant-lookup.ts` com TTL de 60s e tag `tenants`. Webhook invalida via `revalidateTag('tenants')` imediatamente após qualquer mudança de status.
+
+---
+
+### E4.3 — Grace period de PAST_DUE com timestamp avisoPagamentoDesde
+
+**Problema:** O campo `avisoPagamento` (Boolean) não permite calcular há quantos dias o pagamento está vencido.
+
+**Decisão:** Campo `avisoPagamentoDesde DateTime?` adicionado ao `Tenant`. Webhook `PAYMENT_OVERDUE` seta o timestamp **apenas na primeira ocorrência** (se já setado, preserva o original). Webhook `PAYMENT_CONFIRMED` limpa o campo (`null`).
+
+**Grace period:** 7 dias a partir de `avisoPagamentoDesde`. Após 7 dias, `classificarAcessoTenant` retorna `BLOCKED`.
+
+---
+
+### E4.4 — requireBillingAccess em API routes; verificarBillingAction em Server Actions
+
+**Decisão:** Duas funções distintas em `lib/billing/require-access.ts`:
+- `requireBillingAccess()` → para route handlers (`app/api/*`), retorna `NextResponse` 402
+- `verificarBillingAction()` → para Server Actions, retorna `string | null`
+
+**Escopo de aplicação obrigatório** (mutações que criam/modificam dados de negócio):
+- `criarAgendamento`, `criarProfissional`, `criarLocal` — implementado em E4
+- Demais actions de criação/edição — TODO documentado para implementação futura
+
+**Escopo de exceção** (nunca usar o helper):
+- `/api/asaas/saas-webhook` — Asaas precisa notificar mesmo se tenant bloqueado
+- `/api/auth/*` — login não pode ser bloqueado
+- `/api/cron/*` — jobs do sistema
+- Server Actions de `/agendar/[slug]` — agendamento público de pacientes nunca bloqueia
+
+---
+
+### E4.5 — /billing/upgrade em route group (blocked) separado
+
+**Problema:** `/billing/upgrade` precisa de layout sem DashboardShell (sidebar/header). Colocar dentro de `app/(dashboard)/billing/upgrade/` herdaria o layout do dashboard.
+
+**Decisão:** Route group `app/(blocked)/billing/upgrade/` com layout próprio mínimo (`flex min-h-screen items-center justify-center`). URL final permanece `/billing/upgrade`. O Next.js App Router permite múltiplos route groups resolvendo para o mesmo URL path desde que não colidam.
+
+---
+
+### E4.6 — Tour guiado com campo tourCompleted no Tenant
+
+**Decisão:** Campo `tourCompleted Boolean @default(false)` no `Tenant`. Quando true, o tour não é renderizado (verificação em `PostSignupTour` Server Component). Ação `dispensarTour()` seta o campo e invalida o path `/dashboard`.
+
+**Itens essenciais** (3): logo/config clínica, primeiro profissional, primeiro local.
+**Itens opcionais** (1): primeiro paciente.
+**Botão muda** para "Concluir tour" quando os 3 essenciais estão completos.
+
+---
+
+*Lote E4 documentado em: 2026-05-26*

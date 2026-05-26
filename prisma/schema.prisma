@@ -74,6 +74,8 @@ model Tenant {
   asaasSubscriptionId String?      @unique
   subscriptionStatus  String?      // 'TRIALING' | 'ACTIVE' | 'PAST_DUE' | 'CANCELED' | 'EXPIRED'
   avisoPagamento      Boolean      @default(false)
+  avisoPagamentoDesde DateTime?
+  tourCompleted       Boolean      @default(false)
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
 

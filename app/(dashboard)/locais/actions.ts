@@ -4,12 +4,16 @@ import { getTenantDb } from '@/lib/prisma'
 import { withTenantAction } from '@/lib/with-tenant-action'
 import { revalidatePath } from 'next/cache'
 import { LocalSchema } from '@/lib/schemas/local'
+import { verificarBillingAction } from '@/lib/billing/require-access'
 import { db } from '@/lib/db'
 import { getTenantId } from '@/lib/tenant-context'
 import { checkLimit } from '@/lib/plans'
 
 export async function criarLocal(data: unknown): Promise<{ error?: string }> {
   return withTenantAction(async () => {
+    const erroBilling = await verificarBillingAction()
+    if (erroBilling) return { error: erroBilling }
+
     const parsed = LocalSchema.safeParse(data)
     if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Dados inválidos' }
     const tenantId = getTenantId()

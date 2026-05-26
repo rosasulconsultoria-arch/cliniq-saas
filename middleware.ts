@@ -1,6 +1,13 @@
 import NextAuth from 'next-auth'
 import { authConfig } from '@/lib/auth.config'
 import { NextRequest, NextResponse } from 'next/server'
+import { getTenantBilling } from '@/lib/tenant-lookup'
+import { classificarAcessoTenant } from '@/lib/billing/status'
+
+// Migrado de edge para nodejs no E4 para suportar verificação de billing via Prisma.
+// Latência adicional (~50-200ms) aceita — app UI-driven sem requisitos de edge.
+// Ver ARCHITECTURE.md § "Decisões de runtime".
+export const runtime = 'nodejs'
 
 const { auth } = NextAuth(authConfig)
 
@@ -78,6 +85,33 @@ export default auth((req) => {
   const rotasAdmin = ['/financeiro', '/relatorios']
   if (rotasAdmin.some((r) => pathname.startsWith(r)) && role !== 'ADMIN') {
     return NextResponse.redirect(new URL('/dashboard', req.url))
+  }
+
+  // ── Verificação de billing ────────────────────────────────────────────────
+  // /api/* retornam 402 via helper no próprio route handler (não aqui)
+  // /billing/* sempre acessível (usuário BLOCKED precisa chegar até lá)
+  // /signup/* e rotas públicas já retornaram acima
+  const ignorarBilling =
+    pathname.startsWith('/billing') || pathname.startsWith('/api')
+
+  if (!ignorarBilling) {
+    const tenantBilling = await getTenantBilling(slug)
+    if (tenantBilling) {
+      const acesso = classificarAcessoTenant(tenantBilling)
+
+      if (acesso.level === 'BLOCKED') {
+        return NextResponse.redirect(new URL('/billing/upgrade', req.url))
+      }
+
+      if (acesso.level === 'WARNING') {
+        const res = nextWithTenantSlug(req, slug)
+        const aviso = acesso.diasRestantes !== undefined
+          ? String(acesso.diasRestantes)
+          : 'payment'
+        res.headers.set('X-Tenant-Warning', aviso)
+        return res
+      }
+    }
   }
 
   return nextWithTenantSlug(req, slug)
