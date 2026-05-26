@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
+    "migrate": "prisma migrate dev",
+    "postmigrate": "prisma generate",
     "db:seed": "prisma db seed",
     "db:reset": "prisma migrate reset --force",
     "test": "vitest run",
