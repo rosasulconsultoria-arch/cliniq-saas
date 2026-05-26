@@ -196,28 +196,29 @@ export async function reenviarEmailVerificacao(): Promise<{
 
 export async function verificarEmailToken(
   token: string
-): Promise<{ success: boolean; draftId?: string; error?: string }> {
+): Promise<{
+  success: boolean
+  draftId?: string
+  error?: 'invalid' | 'expired' | 'used'
+}> {
   const draft = await db.signupDraft.findFirst({ where: { emailToken: token } })
 
   if (!draft) {
-    return { success: false, error: 'Token inválido' }
+    return { success: false, error: 'invalid' }
   }
 
   if (draft.emailTokenExp && draft.emailTokenExp < new Date()) {
-    return {
-      success: false,
-      error: 'Token expirado. Solicite um novo email de verificação.',
-    }
+    return { success: false, error: 'expired' }
   }
 
-  if (draft.emailVerificado) {
+  if (draft.emailTokenUsed || draft.emailVerificado) {
     await setCurrentDraftId(draft.id)
-    return { success: true, draftId: draft.id }
+    return { success: false, error: 'used', draftId: draft.id }
   }
 
   await db.signupDraft.update({
     where: { id: draft.id },
-    data: { emailVerificado: true, emailToken: null, emailTokenExp: null },
+    data: { emailVerificado: true, emailTokenUsed: true },
   })
 
   await setCurrentDraftId(draft.id)

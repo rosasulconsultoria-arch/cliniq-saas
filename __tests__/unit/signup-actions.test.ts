@@ -139,7 +139,7 @@ describe('verificarEmailToken', () => {
 
     const result = await verificarEmailToken('expired-token')
     expect(result.success).toBe(false)
-    expect(result.error).toContain('expirado')
+    expect(result.error).toBe('expired')
   })
 
   it('sucesso marca emailVerificado=true', async () => {
@@ -158,7 +158,7 @@ describe('verificarEmailToken', () => {
     expect(result.draftId).toBe('draft-1')
     expect(mockDb.signupDraft.update).toHaveBeenCalledWith({
       where: { id: 'draft-1' },
-      data: { emailVerificado: true, emailToken: null, emailTokenExp: null },
+      data: { emailVerificado: true, emailTokenUsed: true },
     })
   })
 })

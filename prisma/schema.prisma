@@ -565,6 +565,7 @@ model SignupDraft {
   emailVerificado Boolean        @default(false)
   emailToken      String?        @unique
   emailTokenExp   DateTime?
+  emailTokenUsed  Boolean        @default(false)
 
   // Controle
   step            Int            @default(0)
