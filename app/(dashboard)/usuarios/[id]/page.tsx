@@ -7,10 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { UsuarioForm } from '@/components/usuarios/form'
 
 interface Props {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
-export default async function EditarUsuarioPage({ params }: Props) {
+export default async function EditarUsuarioPage(props: Props) {
+  const params = await props.params;
   const db = getTenantDb()
   const usuario = await db.user.findUnique({
     where: { id: params.id },

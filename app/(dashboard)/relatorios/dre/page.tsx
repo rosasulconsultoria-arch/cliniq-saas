@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 
-interface Props { searchParams: Record<string, string | string[] | undefined> }
+interface Props { searchParams: Promise<Record<string, string | string[] | undefined>> }
 
 function DRERow({ label, valor, destaque = false, negativo = false, subtotal = false }: { label: string; valor: number; destaque?: boolean; negativo?: boolean; subtotal?: boolean }) {
   return (
@@ -21,7 +21,8 @@ function DRERow({ label, valor, destaque = false, negativo = false, subtotal = f
   )
 }
 
-export default async function RelatorioDREPage({ searchParams }: Props) {
+export default async function RelatorioDREPage(props: Props) {
+  const searchParams = await props.searchParams;
   const preset = getSearchParam(searchParams.periodo, 'mes_atual')
   const { inicio, fim } = periodoToRange(preset, getSearchParam(searchParams.de), getSearchParam(searchParams.ate))
   const d = await getDRE(inicio, fim)

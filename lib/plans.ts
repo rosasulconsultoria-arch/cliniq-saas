@@ -1,5 +1,4 @@
-import { PlanoTenant, Periodicidade as PeriodicidadePrisma } from '@prisma/client'
-import { db } from '@/lib/db'
+import type { PlanoTenant, Periodicidade as PeriodicidadePrisma } from '@prisma/client'
 
 // PlanoId é alias direto do enum Prisma — sem duplicação
 export type PlanoId = PlanoTenant
@@ -222,15 +221,3 @@ export function getPriceDisplay(
   return { mensalEquivalente, cobrancaTotal, savingsAnual, savingsPercentual, parcelas12xSemJuros }
 }
 
-/**
- * Lê o plano atual de um tenant do banco.
- * USO RECOMENDADO: apenas quando o tenantId é o único contexto disponível.
- * NÃO USE em loops ou hot paths — prefira passar o plano por parâmetro ou cachear no início da Server Action.
- */
-export async function getCurrentPlan(tenantId: string): Promise<PlanoConfig> {
-  const tenant = await db.tenant.findUniqueOrThrow({
-    where: { id: tenantId },
-    select: { plano: true },
-  })
-  return PLANOS[tenant.plano]
-}

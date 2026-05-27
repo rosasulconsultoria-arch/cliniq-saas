@@ -8,10 +8,11 @@ import { getTenantDb } from '@/lib/prisma'
 import { CancelButton } from './_cancel-button'
 
 interface Props {
-  params: { token: string }
+  params: Promise<{ token: string }>
 }
 
-export default async function CancelarAgendamentoPage({ params }: Props) {
+export default async function CancelarAgendamentoPage(props: Props) {
+  const params = await props.params;
   const agendamentoId = verificarTokenCancelamento(decodeURIComponent(params.token))
 
   if (!agendamentoId) {

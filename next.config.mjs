@@ -1,9 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    // Packages with native modules must stay as Node.js externals (not bundled by webpack)
-    serverComponentsExternalPackages: ['@react-pdf/renderer', 'canvas'],
-  },
+  // Packages with native Node.js modules must be externalized (not bundled by webpack)
+  serverExternalPackages: ['@react-pdf/renderer', 'canvas', 'pg', 'pg-connection-string', '@prisma/client', '@prisma/adapter-pg'],
   typescript: {
     // Prisma v7 adapter types resolve at runtime — skip TS typecheck in build
     ignoreBuildErrors: true,

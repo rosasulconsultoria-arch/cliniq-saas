@@ -14,10 +14,11 @@ import { DollarSign } from 'lucide-react'
 const PER_PAGE = 20
 
 interface Props {
-  searchParams: Record<string, string | string[] | undefined>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-export default async function ComissoesPage({ searchParams }: Props) {
+export default async function ComissoesPage(props: Props) {
+  const searchParams = await props.searchParams;
   const page = getPageParam(searchParams.page)
   const statusParam = getSearchParam(searchParams.status)
   const q = getSearchParam(searchParams.q)

@@ -3,11 +3,7 @@ import { authConfig } from '@/lib/auth.config'
 import { NextRequest, NextResponse } from 'next/server'
 import { getTenantBilling } from '@/lib/tenant-lookup'
 import { classificarAcessoTenant } from '@/lib/billing/status'
-
-// Migrado de edge para nodejs no E4 para suportar verificação de billing via Prisma.
-// Latência adicional (~50-200ms) aceita — app UI-driven sem requisitos de edge.
-// Ver ARCHITECTURE.md § "Decisões de runtime".
-export const runtime = 'nodejs'
+import { isRotaPublica } from '@/lib/public-routes'
 
 const { auth } = NextAuth(authConfig)
 
@@ -48,7 +44,7 @@ function nextWithTenantSlug(req: NextRequest, slug: string): NextResponse {
   return NextResponse.next({ request: { headers: requestHeaders } })
 }
 
-export default auth((req) => {
+export default auth(async (req) => {
   const { pathname } = req.nextUrl
   const isLoggedIn = !!req.auth
   const role = req.auth?.user?.role as string | undefined
@@ -62,14 +58,8 @@ export default auth((req) => {
     return NextResponse.redirect(new URL('/login', req.url))
   }
 
-  // ── Lógica de autenticação (inalterada) ──────────────────────────────────
-  const isPublica =
-    pathname.startsWith('/agendar') ||
-    pathname.startsWith('/redefinir-senha') ||
-    pathname === '/login' ||
-    pathname === '/esqueci-senha'
-
-  if (isPublica) {
+  // ── Lógica de autenticação ───────────────────────────────────────────────
+  if (isRotaPublica(pathname)) {
     if (isLoggedIn && (pathname === '/login' || pathname === '/esqueci-senha')) {
       return NextResponse.redirect(new URL('/dashboard', req.url))
     }
@@ -90,7 +80,7 @@ export default auth((req) => {
   // ── Verificação de billing ────────────────────────────────────────────────
   // /api/* retornam 402 via helper no próprio route handler (não aqui)
   // /billing/* sempre acessível (usuário BLOCKED precisa chegar até lá)
-  // /signup/* e rotas públicas já retornaram acima
+  // rotas públicas já retornaram acima via isRotaPublica()
   const ignorarBilling =
     pathname.startsWith('/billing') || pathname.startsWith('/api')
 
@@ -117,6 +107,9 @@ export default auth((req) => {
   return nextWithTenantSlug(req, slug)
 })
 
+// nodejs runtime estável no Next.js 15.5 — sem flag experimental.
+// Necessário para Prisma/crypto no middleware (edge não suporta).
 export const config = {
+  runtime: 'nodejs',
   matcher: ['/((?!api/auth|_next/static|_next/image|favicon.ico).*)'],
 }

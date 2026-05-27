@@ -15,10 +15,11 @@ import { getSearchParam, getPageParam } from '@/lib/utils'
 const PER_PAGE = 10
 
 interface Props {
-  searchParams: Record<string, string | string[] | undefined>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-export default async function ProfissionaisPage({ searchParams }: Props) {
+export default async function ProfissionaisPage(props: Props) {
+  const searchParams = await props.searchParams;
   const q = getSearchParam(searchParams.q)
   const page = getPageParam(searchParams.page)
 

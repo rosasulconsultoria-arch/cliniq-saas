@@ -7,12 +7,13 @@ import { TransacaoForm } from '@/components/financeiro/transacao-form'
 import { getSearchParam } from '@/lib/utils'
 
 interface Props {
-  searchParams: Record<string, string | string[] | undefined>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 const TIPO_LABELS = { RECEITA: 'Nova Receita', DESPESA: 'Nova Despesa', INVESTIMENTO: 'Novo Investimento' }
 
-export default async function NovaTransacaoPage({ searchParams }: Props) {
+export default async function NovaTransacaoPage(props: Props) {
+  const searchParams = await props.searchParams;
   const tipoParam = getSearchParam(searchParams.tipo) as 'RECEITA' | 'DESPESA' | 'INVESTIMENTO' | ''
   const tipo = ['RECEITA', 'DESPESA', 'INVESTIMENTO'].includes(tipoParam) ? tipoParam as 'RECEITA' | 'DESPESA' | 'INVESTIMENTO' : 'RECEITA'
 

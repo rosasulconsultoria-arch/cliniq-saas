@@ -7,9 +7,10 @@ import { getSearchParam, formatBRL } from '@/lib/utils'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { DespesasCategoriaChart } from '@/components/financeiro/despesas-categoria-chart'
 
-interface Props { searchParams: Record<string, string | string[] | undefined> }
+interface Props { searchParams: Promise<Record<string, string | string[] | undefined>> }
 
-export default async function RelatorioDespesasCategoriaPage({ searchParams }: Props) {
+export default async function RelatorioDespesasCategoriaPage(props: Props) {
+  const searchParams = await props.searchParams;
   const preset = getSearchParam(searchParams.periodo, 'mes_atual')
   const { inicio, fim } = periodoToRange(preset, getSearchParam(searchParams.de), getSearchParam(searchParams.ate))
   const dados = await getDespesasPorCategoria(inicio, fim)

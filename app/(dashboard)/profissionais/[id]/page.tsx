@@ -18,10 +18,11 @@ import { ParcelamentosTab } from '@/components/parcelamentos/parcelamentos-tab'
 import { formatBRL } from '@/lib/utils'
 
 interface Props {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
-export default async function EditarProfissionalPage({ params }: Props) {
+export default async function EditarProfissionalPage(props: Props) {
+  const params = await props.params;
   const db = getTenantDb()
   const [profissional, comissoes, alugueis, parcelamentos] = await Promise.all([
     db.profissional.findUnique({

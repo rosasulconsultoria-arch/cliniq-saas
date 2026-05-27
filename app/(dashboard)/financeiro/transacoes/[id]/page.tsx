@@ -8,10 +8,11 @@ import { Card, CardContent } from '@/components/ui/card'
 import { TransacaoForm } from '@/components/financeiro/transacao-form'
 
 interface Props {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
-export default async function EditarTransacaoPage({ params }: Props) {
+export default async function EditarTransacaoPage(props: Props) {
+  const params = await props.params;
   const db = getTenantDb()
   const transacao = await db.transacaoFinanceira.findUnique({ where: { id: params.id } })
   if (!transacao) notFound()

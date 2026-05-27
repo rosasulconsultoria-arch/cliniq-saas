@@ -14,10 +14,23 @@
   depois adicionar como variável de ambiente no Vercel.
   Ver `ARCHITECTURE.md` § E3.3.
 
-- **[ALTO] next-auth travado em beta.31 — travar versão no package.json**
-  Remover `^` de `"next-auth": "^5.0.0-beta.31"` para evitar upgrade automático.
-  O JWT encode manual em `finalizarSignup` depende do formato desta versão.
+- ~~**[ALTO] next-auth travado em beta.31 — travar versão no package.json**~~
+  ✅ **CONCLUÍDO** (Lote E3, 2026-05-26) — `^` removido; `package.json` contém `"next-auth": "5.0.0-beta.31"`.
   Ver `ARCHITECTURE.md` § E3.2.
+
+---
+
+## [CONCLUÍDO] Upgrade Next.js 14.2.35 → 15.5.18
+
+- ✅ React 18 → 19, react-dom 18 → 19, @types/react 18 → 19
+- ✅ Codemod `next-async-request-api` aplicado em 34 arquivos (params/searchParams/headers() async)
+- ✅ `serverExternalPackages` expandido para incluir Prisma + pg stack
+- ✅ `dynamic+ssr:false` movido para Client Component wrappers (crm/mapa, dashboard)
+- ✅ `lib/plans.ts` refatorado — Prisma removido do bundle client; `lib/server/plans-server.ts` criado
+- ✅ `shadcn alert` instalado (era importado sem existir — bug latente)
+- ✅ `middleware.ts` migrado para `config.runtime: 'nodejs'` (Next.js 15.5 sintaxe estável)
+- ✅ Todos os gates: build OK, 138/138 unit, 198/198 e2e (incluindo Asaas)
+- Branch: `chore/nextjs-15-upgrade`
 
 ---
 

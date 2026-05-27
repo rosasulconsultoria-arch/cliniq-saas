@@ -1,22 +1,6 @@
 import { getCrmPacientes } from '../actions'
 import { getTenantDb } from '@/lib/prisma'
-import dynamic from 'next/dynamic'
-import { Skeleton } from '@/components/ui/skeleton'
-
-const CrmMapa = dynamic(
-  () => import('@/components/crm/crm-mapa').then(m => ({ default: m.CrmMapa })),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="space-y-4">
-        <Skeleton className="h-[480px] rounded-xl" />
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-lg" />)}
-        </div>
-      </div>
-    ),
-  }
-)
+import { MapaClient } from './MapaClient'
 
 export default async function CrmMapaPage() {
   const db = getTenantDb()
@@ -32,7 +16,7 @@ export default async function CrmMapaPage() {
         O marcador azul indica a localização da clínica.
         Os círculos coloridos mostram a concentração de clientes por cidade.
       </p>
-      <CrmMapa
+      <MapaClient
         pacientes={pacientes.map(p => ({ cidade: p.cidade }))}
         clinica={{
         nome: config?.nome ?? 'Clínica',

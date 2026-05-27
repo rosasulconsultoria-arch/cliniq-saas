@@ -17,10 +17,11 @@ import { TIPO_LOCAL_LABELS, TIPO_LOCAL_ICONS } from '@/lib/schemas/local'
 const PER_PAGE = 10
 
 interface Props {
-  searchParams: Record<string, string | string[] | undefined>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-export default async function LocaisPage({ searchParams }: Props) {
+export default async function LocaisPage(props: Props) {
+  const searchParams = await props.searchParams;
   const q = getSearchParam(searchParams.q)
   const page = getPageParam(searchParams.page)
 

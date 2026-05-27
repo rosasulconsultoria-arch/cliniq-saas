@@ -8,9 +8,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 
-interface Props { searchParams: Record<string, string | string[] | undefined> }
+interface Props { searchParams: Promise<Record<string, string | string[] | undefined>> }
 
-export default async function RelatorioOcupacaoPage({ searchParams }: Props) {
+export default async function RelatorioOcupacaoPage(props: Props) {
+  const searchParams = await props.searchParams;
   const preset = getSearchParam(searchParams.periodo, 'mes_atual')
   const { inicio, fim } = periodoToRange(preset, getSearchParam(searchParams.de), getSearchParam(searchParams.ate))
   const dados = await getOcupacaoPorLocal(inicio, fim)

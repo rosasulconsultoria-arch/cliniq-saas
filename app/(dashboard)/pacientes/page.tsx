@@ -15,10 +15,11 @@ import { getSearchParam, getPageParam, formatarCPF, calcularIdade } from '@/lib/
 const PER_PAGE = 10
 
 interface Props {
-  searchParams: Record<string, string | string[] | undefined>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-export default async function PacientesPage({ searchParams }: Props) {
+export default async function PacientesPage(props: Props) {
+  const searchParams = await props.searchParams;
   const q = getSearchParam(searchParams.q)
   const page = getPageParam(searchParams.page)
 

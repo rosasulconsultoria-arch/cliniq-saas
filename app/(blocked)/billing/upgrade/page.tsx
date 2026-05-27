@@ -23,7 +23,7 @@ const MENSAGENS: Record<BloqueioReason, { titulo: string; descricao: string }> =
 }
 
 export default async function UpgradePage() {
-  const headersList = headers()
+  const headersList = await headers()
   const slug = headersList.get('x-tenant-slug')
 
   let nomePlano = 'Profissional'

@@ -33,7 +33,7 @@ import { getTenantBySlug } from './tenant-lookup'
  */
 export async function withTenantAction<T>(fn: () => Promise<T>): Promise<T> {
   // Next.js 14: headers() é síncrono. Em Next.js 15+, usar await headers()
-  const headersList = headers()
+  const headersList = await headers()
   const slug = headersList.get('x-tenant-slug')
 
   if (!slug) {

@@ -9,9 +9,10 @@ import { PeriodoRelatorio } from '@/components/relatorios/periodo-relatorio'
 import { ExportButtons } from '@/components/relatorios/export-buttons'
 import { getSearchParam, formatBRL } from '@/lib/utils'
 
-interface Props { searchParams: Record<string, string | string[] | undefined> }
+interface Props { searchParams: Promise<Record<string, string | string[] | undefined>> }
 
-export default async function RelatorioFaturamentoPage({ searchParams }: Props) {
+export default async function RelatorioFaturamentoPage(props: Props) {
+  const searchParams = await props.searchParams;
   const preset = getSearchParam(searchParams.periodo, 'mes_atual')
   const { inicio, fim } = periodoToRange(preset, getSearchParam(searchParams.de), getSearchParam(searchParams.ate))
   const dados = await getFaturamentoPorPeriodo(inicio, fim)
