@@ -4,6 +4,7 @@ import { authConfig } from './auth.config'
 import { db } from '@/lib/db'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
+import { extractTenantSlug } from '@/lib/tenant-slug'
 
 const credenciaisSchema = z.object({
   email: z.string().email(),
@@ -26,9 +27,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             return null
           }
 
-          // Resolve tenant pelo subdomínio — injetado pelo middleware via x-tenant-slug.
-          // Isso garante que admin da Clínica A não pode autenticar com email da Clínica B.
-          const slug = request.headers.get('x-tenant-slug')
+          // Resolve tenant: primeiro tenta x-tenant-slug (injetado pelo middleware).
+          // Fallback para host header — cobre /api/auth/* que o matcher do middleware exclui.
+          let slug = request.headers.get('x-tenant-slug')
+          if (!slug) {
+            slug = extractTenantSlug(request.headers.get('host'))
+            if (slug && process.env.NODE_ENV !== 'production') {
+              console.log(`[auth] x-tenant-slug ausente, resolvido via host: ${slug}`)
+            }
+          }
           if (!slug) {
             console.error('[auth] x-tenant-slug ausente — middleware não configurado?')
             return null

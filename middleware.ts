@@ -4,35 +4,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getTenantBilling } from '@/lib/tenant-lookup'
 import { classificarAcessoTenant } from '@/lib/billing/status'
 import { isRotaPublica } from '@/lib/public-routes'
+import { extractTenantSlug } from '@/lib/tenant-slug'
 
 const { auth } = NextAuth(authConfig)
-
-// Domínio base da aplicação (sem subdomínio)
-const BASE_DOMAIN = process.env.BASE_DOMAIN ?? 'cliniq.com.br'
-
-/**
- * Extrai o slug do tenant a partir do host da request.
- *
- * - Produção: neuroconexao.cliniq.com.br → 'neuroconexao'
- * - Dev/localhost: usa DEV_TENANT_SLUG do .env.local
- * - Root domain ou www: retorna null → middleware redireciona para landing
- */
-function extractTenantSlug(req: NextRequest): string | null {
-  const host = req.headers.get('host') ?? ''
-
-  // Desenvolvimento local — qualquer variação de localhost
-  if (host.includes('localhost') || host.includes('127.0.0.1')) {
-    return process.env.DEV_TENANT_SLUG ?? 'neuroconexao'
-  }
-
-  // Subdomínio em produção: neuroconexao.cliniq.com.br
-  if (host.endsWith(`.${BASE_DOMAIN}`)) {
-    const subdomain = host.slice(0, -(BASE_DOMAIN.length + 1))
-    if (subdomain && subdomain !== 'www') return subdomain
-  }
-
-  return null
-}
 
 /**
  * Retorna NextResponse.next() com x-tenant-slug injetado nos headers da request.
@@ -50,7 +24,11 @@ export default auth(async (req) => {
   const role = req.auth?.user?.role as string | undefined
 
   // ── Resolução de tenant ──────────────────────────────────────────────────
-  const slug = extractTenantSlug(req)
+  const slug = extractTenantSlug(req.headers.get('host'))
+
+  if (process.env.NODE_ENV !== 'production' && slug) {
+    console.log(`[middleware] tenant resolvido via host: ${slug}`)
+  }
 
   // Root domain (cliniq.com.br) ou www → redireciona para landing
   // TODO: substituir pela URL definitiva da landing page quando disponível
