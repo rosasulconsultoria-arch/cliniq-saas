@@ -3,14 +3,15 @@ import { getTenantDb } from '@/lib/prisma'
 import { BookingFlow } from '@/components/booking/booking-flow'
 
 interface Props {
-  params: { slug: string }
+  params: Promise<{ slug: string }>
 }
 
 function getInitials(name: string) {
   return name.split(' ').map(n => n[0]).filter(Boolean).slice(0, 2).join('').toUpperCase()
 }
 
-export async function generateMetadata({ params }: Props) {
+export async function generateMetadata(props: Props) {
+  const params = await props.params;
   const db = getTenantDb()
   const profissional = await db.profissional.findFirst({
     where: { slugAgendamento: params.slug },
@@ -23,7 +24,8 @@ export async function generateMetadata({ params }: Props) {
   }
 }
 
-export default async function AgendamentoPublicoPage({ params }: Props) {
+export default async function AgendamentoPublicoPage(props: Props) {
+  const params = await props.params;
   const db = getTenantDb()
 
   // findFirst com extension injeta tenantId automaticamente.

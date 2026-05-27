@@ -4,27 +4,13 @@ import { ptBR } from 'date-fns/locale'
 import { getDashboardKPIs, getDashboardCharts, getDashboardListas, getPeriodDates } from '@/lib/dashboard'
 import { getSearchParam } from '@/lib/utils'
 import { KPISection } from '@/components/dashboard/kpi-section'
-import dynamic from 'next/dynamic'
+import { DashboardChartsClient } from '@/components/dashboard/DashboardChartsClient'
 import { PeriodFilter } from '@/components/dashboard/period-filter'
-import { Skeleton } from '@/components/ui/skeleton'
 import { auth } from '@/lib/auth'
 import { getTenantDb } from '@/lib/prisma'
 import { getTenantId } from '@/lib/tenant-context'
 import { ProfissionalDashboard } from '@/components/dashboard/profissional-dashboard'
 
-const DashboardCharts = dynamic(
-  () => import('@/components/dashboard/dashboard-charts').then(m => ({ default: m.DashboardCharts })),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="grid gap-4 lg:grid-cols-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-[280px] rounded-lg" />
-        ))}
-      </div>
-    ),
-  }
-)
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatBRL } from '@/lib/utils'
@@ -32,10 +18,11 @@ import { Tag } from 'lucide-react'
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 
 interface Props {
-  searchParams: Record<string, string | string[] | undefined>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-export default async function DashboardPage({ searchParams }: Props) {
+export default async function DashboardPage(props: Props) {
+  const searchParams = await props.searchParams;
   const session = await auth()
   const db = getTenantDb()
   const tenantId = getTenantId()
@@ -98,7 +85,7 @@ export default async function DashboardPage({ searchParams }: Props) {
       <KPISection kpis={kpis} />
 
       {/* Charts */}
-      <DashboardCharts data={charts} />
+      <DashboardChartsClient data={charts} />
 
       {/* Bottom lists */}
       <div className="grid gap-4 lg:grid-cols-4">

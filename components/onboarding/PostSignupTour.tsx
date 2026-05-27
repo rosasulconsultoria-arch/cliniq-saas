@@ -19,7 +19,7 @@ export interface TourItem {
 }
 
 export async function PostSignupTour() {
-  const headersList = headers()
+  const headersList = await headers()
   const slug = headersList.get('x-tenant-slug')
   if (!slug) return null
 

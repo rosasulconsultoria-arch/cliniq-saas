@@ -7,9 +7,10 @@ import { getSearchParam, formatBRL } from '@/lib/utils'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Progress } from '@/components/ui/progress'
 
-interface Props { searchParams: Record<string, string | string[] | undefined> }
+interface Props { searchParams: Promise<Record<string, string | string[] | undefined>> }
 
-export default async function RelatorioComissoesPage({ searchParams }: Props) {
+export default async function RelatorioComissoesPage(props: Props) {
+  const searchParams = await props.searchParams;
   const preset = getSearchParam(searchParams.periodo, 'mes_atual')
   const { inicio, fim } = periodoToRange(preset, getSearchParam(searchParams.de), getSearchParam(searchParams.ate))
   const dados = await getComissoesPorProfissional(inicio, fim)

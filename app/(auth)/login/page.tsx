@@ -5,10 +5,11 @@ import { getTenantDb } from '@/lib/prisma'
 export const metadata: Metadata = { title: 'Login' }
 
 interface Props {
-  searchParams: { callbackUrl?: string }
+  searchParams: Promise<{ callbackUrl?: string }>
 }
 
-export default async function LoginPage({ searchParams }: Props) {
+export default async function LoginPage(props: Props) {
+  const searchParams = await props.searchParams;
   const db = getTenantDb()
   const config = await db.configClinica.findFirst()
   const nome = config?.nome ?? 'Clínica de Psicologia'

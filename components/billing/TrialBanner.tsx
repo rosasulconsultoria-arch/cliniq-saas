@@ -5,7 +5,7 @@ import { getTenantBilling } from '@/lib/tenant-lookup'
 import { classificarAcessoTenant } from '@/lib/billing/status'
 
 export async function TrialBanner() {
-  const headersList = headers()
+  const headersList = await headers()
   const slug = headersList.get('x-tenant-slug')
   if (!slug) return null
 

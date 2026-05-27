@@ -730,8 +730,7 @@ await db.$transaction(async (tx) => {
 ```
 
 **⚠️ DÍVIDA TÉCNICA:**
-> `next-auth` está fixado em `5.0.0-beta.31`. O formato do cookie e a chave de encoding podem mudar em versões futuras do Auth.js v5 (ainda em beta). Atualizar com cautela — testar login após cada upgrade de versão.
-> Remover o `^` do package.json para travar a versão: `"next-auth": "5.0.0-beta.31"`.
+> `next-auth` está fixado em `5.0.0-beta.31` (sem `^` no package.json). O formato do cookie e a chave de encoding podem mudar em versões futuras do Auth.js v5 (ainda em beta). Atualizar com cautela — testar login após cada upgrade de versão.
 
 ---
 
@@ -786,7 +785,14 @@ O campo `Tenant.subscriptionStatus` (string livre, valores do Asaas) é separado
 
 **Problema:** O middleware original usava o runtime Edge (padrão Next.js). O enforcement de billing requer consultar o banco (`Tenant.trialEndsAt`, `subscriptionStatus`, `avisoPagamento`) via Prisma, que exige Node.js.
 
-**Decisão:** Adicionado `export const runtime = 'nodejs'` ao `middleware.ts`.
+**Decisão:** `runtime: 'nodejs'` declarado dentro do `export const config` do `middleware.ts` (sintaxe estável do Next.js 15.5 — sem flag experimental). Ver seção "Upgrade Next.js 15.5" abaixo para contexto da migração.
+
+```ts
+export const config = {
+  runtime: 'nodejs',
+  matcher: ['/((?!api/auth|_next/static|_next/image|favicon.ico).*)'],
+}
+```
 
 **Trade-off aceito:** Latência adicional de ~50–200ms por request (cold start ocasional). Aceitável porque o app é UI-driven sem requisitos de edge. Se performance se tornar crítica no futuro, migrar o campo `acessoBilling` para o JWT (atualizado via webhook) e reverter para edge.
 
@@ -854,3 +860,117 @@ O campo `Tenant.subscriptionStatus` (string livre, valores do Asaas) é separado
 ---
 
 *Lote E4 documentado em: 2026-05-26*
+
+---
+
+## Upgrade Next.js 15.5 — chore/nextjs-15-upgrade
+
+**Data:** 2026-05-26  
+**Versão anterior:** 14.2.35  
+**Versão atual:** 15.5.18  
+**Motivação:** Next.js 14 executa o middleware sempre no runtime Edge — `export const runtime = 'nodejs'` é ignorado. A verificação de billing no middleware (Prisma + crypto) exige Node.js. A única solução em 14 seria usar o flag experimental `nodeMiddleware`, indisponível nessa versão.
+
+---
+
+### Upgrade.1 — nodejs middleware estável no Next.js 15.5
+
+**Contexto:** Next.js 15.2+ introduz suporte estável a middleware Node.js via `config.runtime: 'nodejs'` (sem flag experimental). A sintaxe de `export const runtime = 'nodejs'` standalone (Next 14) foi substituída — o runtime deve estar dentro do `export const config`.
+
+**Regra:** Para qualquer uso de Prisma, crypto, ou módulos Node.js no middleware, usar:
+
+```ts
+export const config = {
+  runtime: 'nodejs',
+  matcher: [...],
+}
+```
+
+---
+
+### Upgrade.2 — params e searchParams assíncronos (breaking change Next 15)
+
+**Contexto:** Next.js 15 tornou `params` e `searchParams` em Server Components e Route Handlers assíncronos (Promises). O codemod oficial foi aplicado em 34 arquivos via `npx @next/codemod@latest next-async-request-api`.
+
+**Regra:** Toda page que recebe `params` ou `searchParams` deve ser `async` e fazer `await` nos props:
+
+```ts
+// Correto (Next 15)
+export default async function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+}
+```
+
+---
+
+### Upgrade.3 — serverExternalPackages obrigatório para Prisma + pg
+
+**Contexto:** Next.js 15 não bundla automaticamente módulos nativos Node.js de dependências externas. O stack Prisma + pg precisa ser explicitamente excluído do bundle.
+
+**Configuração obrigatória em `next.config.mjs`:**
+
+```js
+serverExternalPackages: [
+  '@prisma/client',
+  '@prisma/adapter-pg',
+  'pg',
+  'pg-connection-string',
+]
+```
+
+Omitir qualquer um desses causa erro em build (`Module not found: Can't resolve 'fs'` ou similar).
+
+---
+
+### Upgrade.4 — Padrão lib/server/* para utilities com Prisma
+
+**Problema:** Módulos que importam Prisma estaticamente no topo vazam para o bundle client quando um Client Component importa qualquer módulo que (transitivamente) os alcança.
+
+**Decisão:** Utilities com dependência de Prisma/banco ficam em `lib/server/`. Nunca importar diretamente em Client Components.
+
+| Módulo | Localização correta |
+|--------|-------------------|
+| Funções puras (validação, formatação, tipos) | `lib/*.ts` |
+| Funções que usam `db` ou `getTenantDb` | `lib/server/*.ts` |
+
+**Como importar Prisma types em módulos client-safe:**
+
+```ts
+// Correto: import type é apagado em compile-time, não bundla
+import type { PrismaClient } from '@prisma/client'
+```
+
+**Referência:** `lib/server/plans-server.ts` como exemplo canônico.
+
+---
+
+### Upgrade.5 — dynamic+ssr:false em Client Components (não Server Components)
+
+**Problema:** `next/dynamic` com `{ ssr: false }` causa erro se usado em Server Components no Next.js 15.
+
+**Decisão:** Criar um Client Component wrapper para o import dinâmico:
+
+```ts
+// MapaClient.tsx (Client Component)
+'use client'
+const Mapa = dynamic(() => import('./Mapa'), { ssr: false })
+```
+
+**Arquivos afetados:** `app/(dashboard)/crm/mapa/MapaClient.tsx`, `components/dashboard/DashboardChartsClient.tsx`.
+
+---
+
+### Upgrade.6 — Fix: rotas públicas ausentes do middleware (bug pré-E2)
+
+**Bug:** `/signup/*`, `/cancelar/*`, `/termos`, `/privacidade` não estavam na lista de rotas públicas do middleware desde o Lote E2. Usuários não autenticados eram redirecionados para `/login` ao acessar o fluxo de criação de conta.
+
+**Correção:** Lista de rotas públicas extraída para `lib/public-routes.ts:isRotaPublica()` (pura, sem deps). Middleware e testes importam da mesma fonte — mudança na lista quebra os testes automaticamente.
+
+**Lista canônica de rotas públicas:**
+- `/agendar/*` — agendamento público de pacientes
+- `/redefinir-senha/*` — link de reset de senha por e-mail
+- `/signup/*` — fluxo de criação de conta (bug corrigido aqui)
+- `/cancelar/*` — cancelamento de consulta por link (bug corrigido aqui)
+- `/login`, `/esqueci-senha` — autenticação
+- `/termos`, `/privacidade` — páginas legais (bug corrigido aqui)
+
+*Upgrade documentado em: 2026-05-26*

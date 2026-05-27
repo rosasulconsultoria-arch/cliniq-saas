@@ -26,7 +26,7 @@ type AccessResult =
  * }
  */
 export async function requireBillingAccess(): Promise<AccessResult> {
-  const headersList = headers()
+  const headersList = await headers()
   const slug = headersList.get('x-tenant-slug')
 
   if (!slug) {
@@ -83,7 +83,7 @@ export async function requireBillingAccess(): Promise<AccessResult> {
  * }
  */
 export async function verificarBillingAction(): Promise<string | null> {
-  const headersList = headers()
+  const headersList = await headers()
   const slug = headersList.get('x-tenant-slug')
   if (!slug) return null // sem slug → middleware vai bloquear de qualquer forma
 

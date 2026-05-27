@@ -7,10 +7,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { LocalForm } from '@/components/locais/form'
 
 interface Props {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
-export default async function EditarLocalPage({ params }: Props) {
+export default async function EditarLocalPage(props: Props) {
+  const params = await props.params;
   const db = getTenantDb()
   const local = await db.local.findUnique({ where: { id: params.id } })
   if (!local) notFound()

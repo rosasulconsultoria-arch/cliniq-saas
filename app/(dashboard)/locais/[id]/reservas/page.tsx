@@ -7,10 +7,11 @@ import { ReservasView } from '@/components/locais/reservas-view'
 import { TIPO_LOCAL_ICONS, TIPO_LOCAL_LABELS } from '@/lib/schemas/local'
 
 interface Props {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
-export default async function ReservasLocalPage({ params }: Props) {
+export default async function ReservasLocalPage(props: Props) {
+  const params = await props.params;
   const db = getTenantDb()
 
   const [local, profissionais, reservas] = await Promise.all([

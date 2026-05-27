@@ -24,10 +24,11 @@ const ROLE_LABELS: Record<string, string> = {
 }
 
 interface Props {
-  searchParams: Record<string, string | string[] | undefined>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
-export default async function UsuariosPage({ searchParams }: Props) {
+export default async function UsuariosPage(props: Props) {
+  const searchParams = await props.searchParams;
   const q = getSearchParam(searchParams.q)
   const page = getPageParam(searchParams.page)
   const roleFilter = getSearchParam(searchParams.role)

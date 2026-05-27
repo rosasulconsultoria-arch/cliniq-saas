@@ -33,7 +33,7 @@ export default async function RootLayout({
   children: React.ReactNode
 }>) {
   // Next.js 14: headers() é síncrono. Em Next.js 15+, usar await headers()
-  const headersList = headers()
+  const headersList = await headers()
   const slug = headersList.get('x-tenant-slug')
 
   // Sem slug = request chegou sem passar pelo middleware (ou root domain)
