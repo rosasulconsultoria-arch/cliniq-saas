@@ -1,5 +1,69 @@
 # Dívida Técnica
 
+## BUGS DESCOBERTOS NO SMOKE TEST 2026-05-27 — PRIORIZADOS
+
+### PRIORIDADE 1 — BLOQUEADORES (impedem uso real)
+
+**[P1.1]** DashboardLayout e todas as ~47 pages/layouts pós-auth em `app/(dashboard)/**` quebram com erro "Operação executada fora de contexto de tenant" ao acessar via browser.
+- **Causa:** `runWithTenant` em `app/layout.tsx` envolve callback síncrono; React 19 RSC pipeline executa children depois, fora do ALS context
+- **Estratégia decidida:** estender padrão do commit 8232f96 (header explícito + `getTenantBySlug` + `tenantId` em queries) para todas as pages/layouts do dashboard
+- **Esforço estimado:** 3-4 horas, ~47 arquivos
+- **NÃO codar sem autorização explícita do dono em sessão fresca**
+
+---
+
+### PRIORIDADE 2 — BUGS VISUAIS DE CONVERSÃO em /signup/plano
+
+**[P2.1]** Botão "Começar trial gratuito de 14 dias" vazando dos cards (texto extrapola largura).
+
+**[P2.2]** Toggle Mensal/Anual com MENSAL default. Decisão de produto: deveria ser ANUAL.
+
+**[P2.3]** "1 profissional(is)", "10 local(is)" — flexão gramatical preguiçosa. Implementar pluralização correta.
+
+**[P2.4]** Cards com larguras/alturas inconsistentes (Básico mais estreito que os outros).
+
+---
+
+### PRIORIDADE 3 — BUGS DE INFRAESTRUTURA
+
+**[P3.1]** Link do email de verificação aponta hardcoded para `localhost:3000`. Quando dev rodando em outra porta (ex: 3002 quando 3000 ocupada), link quebra.
+- Solução: usar variável env `BASE_URL` ou detectar porta do request
+
+**[P3.2]** Resend free tier mudou política — `onboarding@resend.dev` só envia para email do dono da conta. Antes de produção, configurar domínio próprio no Resend.
+
+**[P3.3]** Tenants de teste E2E ("Clínica A", "Clínica B") vazaram para o schema "public" em vez de ficarem isolados em "test_schema". Investigar:
+- Em qual cenário `__tests__/e2e/setup.ts` grava no schema errado
+- Provavelmente race condition ou env var `DATABASE_URL` apontando para errado em algum fluxo
+- Não é catastrófico (banco de dev), mas é sintoma de bug de isolamento que pode ser pior em produção
+
+---
+
+### PRIORIDADE 4 — PENDÊNCIAS DE PRODUTO
+
+**[P4.1]** "[NOME_DO_PRODUTO]" aparece como literal no cabeçalho — definir nome do produto antes de lançamento.
+
+**[P4.2]** Transição `/signup/verificar` → `/signup/cartao` não está ligada — usuário vai para `/signup/sucesso-temporario` (placeholder). Conectar fluxo do E3 oficialmente.
+
+---
+
+### PRIORIDADE 5 — GAP DE COBERTURA DE TESTES (TODO crítico já registrado)
+
+**[P5.1]** Suíte E2E atual (231 testes) não exercita o render pipeline real do Next.js. Bugs de ALS context, RSC rendering, e ciclo HTTP completo (login, signup) passam despercebidos.
+- Mitigação atual: smoke test manual
+- Solução longo prazo: adicionar Playwright ou Next.js test mode para testes HTTP reais que renderizem pages
+
+---
+
+### CONTEXTO DA SESSÃO 2026-05-27
+
+- Fase 2 entregue: onboarding self-service, integração Asaas B2B, trial enforcement, billing UI, tour guiado
+- Upgrade Next.js 14.2.35 → 15.5.18 + node middleware (4 etapas, branch isolada, merge limpo)
+- 9 bugs latentes corrigidos durante a sessão (ver git log)
+- 138 unit + 231 E2E = 369 testes passando
+- Smoke test parado por opção (sessão longa, fadiga cognitiva acumulada — decisão correta)
+
+---
+
 ## [CRÍTICO] Testes HTTP reais — cobertura faltando (descoberto 2026-05-27)
 
 - **[CRÍTICO] Adicionar testes HTTP reais (Playwright ou Next.js test mode) que renderizam Server Components de verdade.**
