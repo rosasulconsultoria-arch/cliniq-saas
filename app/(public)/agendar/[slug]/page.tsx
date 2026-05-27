@@ -1,5 +1,7 @@
 import { notFound } from 'next/navigation'
-import { getTenantDb } from '@/lib/prisma'
+import { headers } from 'next/headers'
+import { getTenantBySlug } from '@/lib/tenant-lookup'
+import { db } from '@/lib/db'
 import { BookingFlow } from '@/components/booking/booking-flow'
 
 interface Props {
@@ -12,9 +14,11 @@ function getInitials(name: string) {
 
 export async function generateMetadata(props: Props) {
   const params = await props.params;
-  const db = getTenantDb()
+  const slug = (await headers()).get('x-tenant-slug') ?? ''
+  const tenant = slug ? await getTenantBySlug(slug) : null
+  if (!tenant) return {}
   const profissional = await db.profissional.findFirst({
-    where: { slugAgendamento: params.slug },
+    where: { slugAgendamento: params.slug, tenantId: tenant.id },
     include: { user: { select: { name: true } } },
   })
   if (!profissional) return {}
@@ -26,20 +30,20 @@ export async function generateMetadata(props: Props) {
 
 export default async function AgendamentoPublicoPage(props: Props) {
   const params = await props.params;
-  const db = getTenantDb()
+  const slug = (await headers()).get('x-tenant-slug') ?? ''
+  const tenant = slug ? await getTenantBySlug(slug) : null
+  if (!tenant) notFound()
 
-  // findFirst com extension injeta tenantId automaticamente.
-  // Se o slug pertencer a profissional de outro tenant, retorna null → 404.
   // Proteção cross-tenant: profissional do TenantA não é encontrado via subdomínio do TenantB.
   const [profissional, config] = await Promise.all([
     db.profissional.findFirst({
-      where: { slugAgendamento: params.slug },
+      where: { slugAgendamento: params.slug, tenantId: tenant.id },
       include: {
         user: { select: { name: true } },
         disponibilidades: true,
       },
     }),
-    db.configClinica.findFirst(),
+    db.configClinica.findFirst({ where: { tenantId: tenant.id } }),
   ])
 
   if (!profissional || !profissional.ativo) notFound()

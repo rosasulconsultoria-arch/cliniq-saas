@@ -1,10 +1,12 @@
 import { notFound } from 'next/navigation'
+import { headers } from 'next/headers'
 import Link from 'next/link'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import { verificarTokenCancelamento } from '@/lib/tokens'
-import { getTenantDb } from '@/lib/prisma'
+import { getTenantBySlug } from '@/lib/tenant-lookup'
+import { db } from '@/lib/db'
 import { CancelButton } from './_cancel-button'
 
 interface Props {
@@ -29,9 +31,12 @@ export default async function CancelarAgendamentoPage(props: Props) {
     )
   }
 
-  const db = getTenantDb()
-  const agendamento = await db.agendamento.findUnique({
-    where: { id: agendamentoId },
+  const slug = (await headers()).get('x-tenant-slug') ?? ''
+  const tenant = slug ? await getTenantBySlug(slug) : null
+  if (!tenant) notFound()
+
+  const agendamento = await db.agendamento.findFirst({
+    where: { id: agendamentoId, tenantId: tenant.id },
     include: {
       profissional: { include: { user: { select: { name: true } } } },
       paciente: { select: { nome: true } },

@@ -1,5 +1,14 @@
 # Dívida Técnica
 
+## [CRÍTICO] Testes HTTP reais — cobertura faltando (descoberto 2026-05-27)
+
+- **[CRÍTICO] Adicionar testes HTTP reais (Playwright ou Next.js test mode) que renderizam Server Components de verdade.**
+  Cobertura faltando descoberta no smoke test 2026-05-27 — bug ALS context em `/login` passou despercebido pelos 359 testes existentes porque nenhum teste exercita o rendering pipeline real do Next.js.
+  Os testes mockados em `__tests__/e2e/pre-auth-pages.test.ts` verificam a lógica de resolução de tenant, mas não detectariam uma regressão onde `runWithTenant()` no root layout parasse de propagar para Server Components filhos.
+  Solução recomendada: Playwright com `next dev` ou `next start`, testando `/login`, `/agendar/[slug]`, `/cancelar/[token]` com subdomínio mockado via header `x-tenant-slug`.
+
+---
+
 ## [CRÍTICO] Lote E3 — Bloqueadores de produção
 
 - **[CRÍTICO] PCI DSS — tokenização de cartão obrigatória antes de produção real**

@@ -1,6 +1,8 @@
 import { type Metadata } from 'next'
+import { headers } from 'next/headers'
 import { LoginForm } from '@/components/auth/login-form'
-import { getTenantDb } from '@/lib/prisma'
+import { getTenantBySlug } from '@/lib/tenant-lookup'
+import { db } from '@/lib/db'
 
 export const metadata: Metadata = { title: 'Login' }
 
@@ -10,8 +12,11 @@ interface Props {
 
 export default async function LoginPage(props: Props) {
   const searchParams = await props.searchParams;
-  const db = getTenantDb()
-  const config = await db.configClinica.findFirst()
+  const slug = (await headers()).get('x-tenant-slug') ?? ''
+  const tenant = slug ? await getTenantBySlug(slug) : null
+  const config = tenant
+    ? await db.configClinica.findFirst({ where: { tenantId: tenant.id } })
+    : null
   const nome = config?.nome ?? 'Clínica de Psicologia'
   const logo = config?.logoBase64 ?? null
   const cor = config?.corPrimaria ?? '#4f46e5'

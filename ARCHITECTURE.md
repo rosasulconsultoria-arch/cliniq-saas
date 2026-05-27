@@ -206,6 +206,33 @@ O middleware Next.js resolve o tenant pelo subdomínio e inicia o contexto. O RL
 - Atualizar `lib/auth.ts` — busca de usuário no `authorize` precisa filtrar por tenant (lido do host da request)
 - A sessão NextAuth precisa incluir `tenantId` no token JWT
 
+### Pages pré-autenticação — padrão obrigatório
+
+Pages em `(auth)/*` e `(public)/*` (login, esqueci-senha, redefinir-senha, cancelar, agendar) **NÃO devem usar `getTenantDb()`** porque rodam antes da resolução completa do AsyncLocalStorage context.
+
+O `app/layout.tsx` estabelece o contexto via `runWithTenant()`, mas a propagação do ALS para Server Components filhos em Next.js 15 não é garantida para pages pré-autenticação. Usar `getTenantDb()` nessas pages causa: `[TenantContext] Operação executada fora de contexto de tenant`.
+
+**Padrão correto para pages pré-auth:**
+
+```ts
+import { headers } from 'next/headers'
+import { getTenantBySlug } from '@/lib/tenant-lookup'
+import { db } from '@/lib/db'
+
+const slug = (await headers()).get('x-tenant-slug') ?? ''
+const tenant = slug ? await getTenantBySlug(slug) : null
+// tenant null → usar fallbacks (não crashar)
+const config = tenant
+  ? await db.configClinica.findFirst({ where: { tenantId: tenant.id } })
+  : null
+```
+
+**Padrão correto para Server Actions** (POST — sempre sem ALS context): usar `withTenantAction()` de `lib/with-tenant-action.ts`.
+
+**Padrão correto para Server Components autenticados** (dashboard, settings): `getTenantDb()` funciona porque o ALS context é estabelecido pelo `(dashboard)/layout.tsx` no mesmo fluxo de request.
+
+**Limitação conhecida:** testes E2E atuais não exercitam o render pipeline do Next.js. Bugs de ALS context em Server Components só são detectados via smoke test manual ou Playwright (não implementado). Ver TODO.md — "[CRÍTICO] testes HTTP reais com Playwright".
+
 ### Trade-offs conhecidos
 
 #### `findUnique` → injeção de `tenantId` no `where` (Opção B)
