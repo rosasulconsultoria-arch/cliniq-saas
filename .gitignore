@@ -44,3 +44,5 @@ seed-prod.mjs
 check-user.mjs
 create-admin.mjs
 nul
+
+dev-server.log
