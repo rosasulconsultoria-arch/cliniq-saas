@@ -2,6 +2,8 @@ import { Suspense } from 'react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { getTenantDb } from '@/lib/prisma'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TablePagination } from '@/components/table-pagination'
@@ -27,21 +29,24 @@ export default async function ComissoesPage(props: Props) {
     ...(statusParam && statusParam !== 'todos' ? { status: statusParam } : {}),
   }
 
-  const db = getTenantDb()
-  const [comissoes, total, pendentesTotal] = await Promise.all([
-    db.comissao.findMany({
-      where,
-      include: {
-        profissional: { include: { user: { select: { name: true } } } },
-        agendamento: { select: { dataHoraInicio: true, paciente: { select: { nome: true } } } },
-      },
-      skip: (page - 1) * PER_PAGE,
-      take: PER_PAGE,
-      orderBy: { agendamento: { dataHoraInicio: 'desc' } },
-    }),
-    db.comissao.count({ where }),
-    db.comissao.aggregate({ where: { status: 'PENDENTE' }, _sum: { valorComissao: true } }),
-  ])
+  const { id: tenantId } = await getCurrentTenant()
+  const [comissoes, total, pendentesTotal] = await runWithTenant(tenantId, async () => {
+    const db = getTenantDb()
+    return Promise.all([
+      db.comissao.findMany({
+        where,
+        include: {
+          profissional: { include: { user: { select: { name: true } } } },
+          agendamento: { select: { dataHoraInicio: true, paciente: { select: { nome: true } } } },
+        },
+        skip: (page - 1) * PER_PAGE,
+        take: PER_PAGE,
+        orderBy: { agendamento: { dataHoraInicio: 'desc' } },
+      }),
+      db.comissao.count({ where }),
+      db.comissao.aggregate({ where: { status: 'PENDENTE' }, _sum: { valorComissao: true } }),
+    ])
+  })
 
   return (
     <div className="space-y-6">

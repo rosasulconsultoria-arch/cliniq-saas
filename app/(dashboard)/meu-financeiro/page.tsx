@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { auth } from '@/lib/auth'
 import { getTenantDb } from '@/lib/prisma'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { redirect } from 'next/navigation'
 import { format, startOfMonth } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
@@ -17,49 +19,57 @@ export default async function MeuFinanceiroPage() {
   const session = await auth()
   if (session?.user?.role !== 'PROFISSIONAL') redirect('/dashboard')
 
-  const db = getTenantDb()
-  const profissional = await db.profissional.findUnique({
-    where: { userId: session.user.id! },
+  const { id: tenantId } = await getCurrentTenant()
+
+  const profissional = await runWithTenant(tenantId, async () => {
+    const db = getTenantDb()
+    return db.profissional.findUnique({ where: { userId: session.user.id! } })
   })
   if (!profissional) redirect('/dashboard')
 
   // Auto-gerar aluguel do mês atual para LOCATARIO
   if (profissional.tipoVinculo === 'LOCATARIO' && profissional.valorAluguelMensal) {
     const mesAtual = startOfMonth(new Date())
-    const aluguelExiste = await db.aluguel.findFirst({
-      where: { profissionalId: profissional.id, mesReferencia: mesAtual },
-    })
-    if (!aluguelExiste) {
-      await db.aluguel.create({
-        data: {
-          profissionalId: profissional.id,
-          mesReferencia: mesAtual,
-          valor: profissional.valorAluguelMensal,
-          status: 'PENDENTE',
-        },
+    await runWithTenant(tenantId, async () => {
+      const db = getTenantDb()
+      const aluguelExiste = await db.aluguel.findFirst({
+        where: { profissionalId: profissional.id, mesReferencia: mesAtual },
       })
-    }
+      if (!aluguelExiste) {
+        await db.aluguel.create({
+          data: {
+            profissionalId: profissional.id,
+            mesReferencia: mesAtual,
+            valor: profissional.valorAluguelMensal,
+            status: 'PENDENTE',
+          },
+        })
+      }
+    })
   }
 
-  const [despesasPessoais, alugueis, comissoes] = await Promise.all([
-    db.despesaProfissional.findMany({
-      where: { profissionalId: profissional.id },
-      orderBy: { data: 'desc' },
-    }),
-    profissional.tipoVinculo === 'LOCATARIO'
-      ? db.aluguel.findMany({
-          where: { profissionalId: profissional.id },
-          orderBy: { mesReferencia: 'desc' },
-        })
-      : Promise.resolve([]),
-    profissional.tipoVinculo === 'COMISSIONADO'
-      ? db.comissao.findMany({
-          where: { profissionalId: profissional.id },
-          include: { agendamento: { select: { dataHoraInicio: true, valor: true } } },
-          orderBy: { agendamento: { dataHoraInicio: 'desc' } },
-        })
-      : Promise.resolve([]),
-  ])
+  const [despesasPessoais, alugueis, comissoes] = await runWithTenant(tenantId, async () => {
+    const db = getTenantDb()
+    return Promise.all([
+      db.despesaProfissional.findMany({
+        where: { profissionalId: profissional.id },
+        orderBy: { data: 'desc' },
+      }),
+      profissional.tipoVinculo === 'LOCATARIO'
+        ? db.aluguel.findMany({
+            where: { profissionalId: profissional.id },
+            orderBy: { mesReferencia: 'desc' },
+          })
+        : Promise.resolve([]),
+      profissional.tipoVinculo === 'COMISSIONADO'
+        ? db.comissao.findMany({
+            where: { profissionalId: profissional.id },
+            include: { agendamento: { select: { dataHoraInicio: true, valor: true } } },
+            orderBy: { agendamento: { dataHoraInicio: 'desc' } },
+          })
+        : Promise.resolve([]),
+    ])
+  })
 
   // Totais combinados
   const totalPendente =

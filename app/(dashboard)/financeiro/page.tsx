@@ -1,6 +1,8 @@
 import { startOfMonth, endOfMonth, subMonths, format, addDays } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { getTenantDb } from '@/lib/prisma'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { KPICards } from '@/components/financeiro/kpi-cards'
 import { ReceitasDespesasChart } from '@/components/financeiro/receitas-despesas-chart'
 import { DespesasCategoriaChart } from '@/components/financeiro/despesas-categoria-chart'
@@ -29,20 +31,23 @@ export default async function FinanceiroPage({ searchParams }: Props) {
   const periodoParam = typeof sp.periodo === 'string' ? sp.periodo : 'mes'
   const { inicio, fim, meses, label } = getPeriodo(periodoParam)
   const hoje = new Date()
-  const db = getTenantDb()
+  const { id: tenantId } = await getCurrentTenant()
 
   // KPIs + breakdown por origem
-  const [receita, despesa, investimento, comissoesPend, alugueisPend, todasReceitas] = await Promise.all([
-    db.transacaoFinanceira.aggregate({ where: { tipo: 'RECEITA', data: { gte: inicio, lte: fim }, status: 'PAGO' }, _sum: { valor: true } }),
-    db.transacaoFinanceira.aggregate({ where: { tipo: 'DESPESA', data: { gte: inicio, lte: fim }, status: 'PAGO' }, _sum: { valor: true } }),
-    db.transacaoFinanceira.aggregate({ where: { tipo: 'INVESTIMENTO', data: { gte: inicio, lte: fim }, status: 'PAGO' }, _sum: { valor: true } }),
-    db.comissao.aggregate({ where: { status: 'PENDENTE', agendamento: { dataHoraInicio: { gte: inicio, lte: fim } } }, _sum: { valorComissao: true } }),
-    db.aluguel.aggregate({ where: { status: 'PENDENTE', mesReferencia: { gte: inicio, lte: fim } }, _sum: { valor: true } }),
-    db.transacaoFinanceira.findMany({
-      where: { tipo: 'RECEITA', data: { gte: inicio, lte: fim }, status: 'PAGO' },
-      select: { descricao: true, valor: true },
-    }),
-  ])
+  const [receita, despesa, investimento, comissoesPend, alugueisPend, todasReceitas] = await runWithTenant(tenantId, async () => {
+    const db = getTenantDb()
+    return Promise.all([
+      db.transacaoFinanceira.aggregate({ where: { tipo: 'RECEITA', data: { gte: inicio, lte: fim }, status: 'PAGO' }, _sum: { valor: true } }),
+      db.transacaoFinanceira.aggregate({ where: { tipo: 'DESPESA', data: { gte: inicio, lte: fim }, status: 'PAGO' }, _sum: { valor: true } }),
+      db.transacaoFinanceira.aggregate({ where: { tipo: 'INVESTIMENTO', data: { gte: inicio, lte: fim }, status: 'PAGO' }, _sum: { valor: true } }),
+      db.comissao.aggregate({ where: { status: 'PENDENTE', agendamento: { dataHoraInicio: { gte: inicio, lte: fim } } }, _sum: { valorComissao: true } }),
+      db.aluguel.aggregate({ where: { status: 'PENDENTE', mesReferencia: { gte: inicio, lte: fim } }, _sum: { valor: true } }),
+      db.transacaoFinanceira.findMany({
+        where: { tipo: 'RECEITA', data: { gte: inicio, lte: fim }, status: 'PAGO' },
+        select: { descricao: true, valor: true },
+      }),
+    ])
+  })
 
   const origemConsultas = todasReceitas.filter(r => r.descricao.startsWith('Receita de consulta')).reduce((s, r) => s + Number(r.valor), 0)
   const origemAlugueis  = todasReceitas.filter(r => r.descricao.startsWith('Aluguel de sala')).reduce((s, r) => s + Number(r.valor), 0)
@@ -54,26 +59,32 @@ export default async function FinanceiroPage({ searchParams }: Props) {
 
   // Gráfico mensal — adapta ao período selecionado
   const mesesList = Array.from({ length: meses }, (_, i) => subMonths(hoje, meses - 1 - i))
-  const dadosMensais = await Promise.all(
-    mesesList.map(async (mes) => {
-      const ini = startOfMonth(mes)
-      const fi  = endOfMonth(mes)
-      const [r, d] = await Promise.all([
-        db.transacaoFinanceira.aggregate({ where: { tipo: 'RECEITA',  data: { gte: ini, lte: fi }, status: 'PAGO' }, _sum: { valor: true } }),
-        db.transacaoFinanceira.aggregate({ where: { tipo: 'DESPESA',  data: { gte: ini, lte: fi }, status: 'PAGO' }, _sum: { valor: true } }),
-      ])
-      return {
-        mes: format(mes, 'MMM', { locale: ptBR }),
-        receita: Number(r._sum.valor ?? 0),
-        despesa: Number(d._sum.valor ?? 0),
-      }
-    })
-  )
+  const dadosMensais = await runWithTenant(tenantId, async () => {
+    const db = getTenantDb()
+    return Promise.all(
+      mesesList.map(async (mes) => {
+        const ini = startOfMonth(mes)
+        const fi  = endOfMonth(mes)
+        const [r, d] = await Promise.all([
+          db.transacaoFinanceira.aggregate({ where: { tipo: 'RECEITA',  data: { gte: ini, lte: fi }, status: 'PAGO' }, _sum: { valor: true } }),
+          db.transacaoFinanceira.aggregate({ where: { tipo: 'DESPESA',  data: { gte: ini, lte: fi }, status: 'PAGO' }, _sum: { valor: true } }),
+        ])
+        return {
+          mes: format(mes, 'MMM', { locale: ptBR }),
+          receita: Number(r._sum.valor ?? 0),
+          despesa: Number(d._sum.valor ?? 0),
+        }
+      })
+    )
+  })
 
   // Despesas por categoria (período selecionado)
-  const despesasBruto = await db.transacaoFinanceira.findMany({
-    where: { tipo: 'DESPESA', data: { gte: inicio, lte: fim }, status: 'PAGO' },
-    select: { valor: true, categoriaId: true, categoria: { select: { nome: true, cor: true } } },
+  const despesasBruto = await runWithTenant(tenantId, async () => {
+    const db = getTenantDb()
+    return db.transacaoFinanceira.findMany({
+      where: { tipo: 'DESPESA', data: { gte: inicio, lte: fim }, status: 'PAGO' },
+      select: { valor: true, categoriaId: true, categoria: { select: { nome: true, cor: true } } },
+    })
   })
   const porCategoria = Object.values(
     despesasBruto.reduce<Record<string, { nome: string; cor: string; total: number }>>((acc, t) => {
@@ -86,11 +97,14 @@ export default async function FinanceiroPage({ searchParams }: Props) {
 
   // Próximos vencimentos (sempre próximos 7 dias, independente do filtro)
   const em7Dias = addDays(hoje, 7)
-  const vencimentos = await db.transacaoFinanceira.findMany({
-    where: { status: 'PENDENTE', data: { gte: hoje, lte: em7Dias } },
-    include: { categoria: { select: { nome: true, cor: true } } },
-    orderBy: { data: 'asc' },
-    take: 8,
+  const vencimentos = await runWithTenant(tenantId, async () => {
+    const db = getTenantDb()
+    return db.transacaoFinanceira.findMany({
+      where: { status: 'PENDENTE', data: { gte: hoje, lte: em7Dias } },
+      include: { categoria: { select: { nome: true, cor: true } } },
+      orderBy: { data: 'asc' },
+      take: 8,
+    })
   })
 
   return (

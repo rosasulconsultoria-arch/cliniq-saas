@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { format } from 'date-fns'
 import { getTenantDb } from '@/lib/prisma'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { TransacaoForm } from '@/components/financeiro/transacao-form'
@@ -13,17 +15,24 @@ interface Props {
 
 export default async function EditarTransacaoPage(props: Props) {
   const params = await props.params;
-  const db = getTenantDb()
-  const transacao = await db.transacaoFinanceira.findUnique({ where: { id: params.id } })
+  const { id: tenantId } = await getCurrentTenant()
+
+  const transacao = await runWithTenant(tenantId, async () => {
+    const db = getTenantDb()
+    return db.transacaoFinanceira.findUnique({ where: { id: params.id } })
+  })
   if (!transacao) notFound()
 
   const tipo = transacao.tipo as 'RECEITA' | 'DESPESA' | 'INVESTIMENTO'
   const backHref = tipo === 'RECEITA' ? '/financeiro/receitas' : tipo === 'DESPESA' ? '/financeiro/despesas' : '/financeiro/investimentos'
 
-  const [categorias, profissionais] = await Promise.all([
-    db.categoriaFinanceira.findMany({ orderBy: [{ tipo: 'asc' }, { nome: 'asc' }] }),
-    db.profissional.findMany({ where: { ativo: true }, include: { user: { select: { name: true } } }, orderBy: { user: { name: 'asc' } } }),
-  ])
+  const [categorias, profissionais] = await runWithTenant(tenantId, async () => {
+    const db = getTenantDb()
+    return Promise.all([
+      db.categoriaFinanceira.findMany({ orderBy: [{ tipo: 'asc' }, { nome: 'asc' }] }),
+      db.profissional.findMany({ where: { ativo: true }, include: { user: { select: { name: true } } }, orderBy: { user: { name: 'asc' } } }),
+    ])
+  })
 
   const defaultValues = {
     tipo,

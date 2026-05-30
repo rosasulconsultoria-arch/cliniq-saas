@@ -1,9 +1,15 @@
+// TransacaoList é async Server Component renderizado por 3 thin-wrappers
+// (despesas/, receitas/, investimentos/page.tsx). React 19 RSC pipeline renderiza
+// este componente em novo contexto async — ALS do parent não propaga. Resolve
+// próprio tenant via getCurrentTenant() (mesmo padrão de TrialBanner e ProfissionalDashboard).
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { Plus, Pencil } from 'lucide-react'
 import { startOfMonth, endOfMonth, parse, format, isValid } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { getTenantDb } from '@/lib/prisma'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -48,19 +54,22 @@ export async function TransacaoList({ tipo, searchParams }: Props) {
     ...(q ? { descricao: { contains: q, mode: 'insensitive' as const } } : {}),
   }
 
-  const db = getTenantDb()
-  const [transacoes, total, categorias, totalValor] = await Promise.all([
-    db.transacaoFinanceira.findMany({
-      where,
-      include: { categoria: { select: { nome: true, cor: true } } },
-      skip: (page - 1) * PER_PAGE,
-      take: PER_PAGE,
-      orderBy: { data: 'desc' },
-    }),
-    db.transacaoFinanceira.count({ where }),
-    db.categoriaFinanceira.findMany({ where: { tipo }, orderBy: { nome: 'asc' } }),
-    db.transacaoFinanceira.aggregate({ where, _sum: { valor: true } }),
-  ])
+  const { id: tenantId } = await getCurrentTenant()
+  const [transacoes, total, categorias, totalValor] = await runWithTenant(tenantId, async () => {
+    const db = getTenantDb()
+    return Promise.all([
+      db.transacaoFinanceira.findMany({
+        where,
+        include: { categoria: { select: { nome: true, cor: true } } },
+        skip: (page - 1) * PER_PAGE,
+        take: PER_PAGE,
+        orderBy: { data: 'desc' },
+      }),
+      db.transacaoFinanceira.count({ where }),
+      db.categoriaFinanceira.findMany({ where: { tipo }, orderBy: { nome: 'asc' } }),
+      db.transacaoFinanceira.aggregate({ where, _sum: { valor: true } }),
+    ])
+  })
 
   const titulo = TIPO_LABELS[tipo]
   const corValor = tipo === 'RECEITA' ? 'text-emerald-600' : tipo === 'DESPESA' ? 'text-red-500' : 'text-violet-600'

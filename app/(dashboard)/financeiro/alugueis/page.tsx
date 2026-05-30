@@ -2,6 +2,8 @@ import { Suspense } from 'react'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { getTenantDb } from '@/lib/prisma'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { TablePagination } from '@/components/table-pagination'
@@ -26,18 +28,21 @@ export default async function AlugueisPage(props: Props) {
     ...(statusParam && statusParam !== 'todos' ? { status: statusParam } : {}),
   }
 
-  const db = getTenantDb()
-  const [alugueis, total, pendentesTotal] = await Promise.all([
-    db.aluguel.findMany({
-      where,
-      include: { profissional: { include: { user: { select: { name: true } } } } },
-      skip: (page - 1) * PER_PAGE,
-      take: PER_PAGE,
-      orderBy: { mesReferencia: 'desc' },
-    }),
-    db.aluguel.count({ where }),
-    db.aluguel.aggregate({ where: { status: 'PENDENTE' }, _sum: { valor: true } }),
-  ])
+  const { id: tenantId } = await getCurrentTenant()
+  const [alugueis, total, pendentesTotal] = await runWithTenant(tenantId, async () => {
+    const db = getTenantDb()
+    return Promise.all([
+      db.aluguel.findMany({
+        where,
+        include: { profissional: { include: { user: { select: { name: true } } } } },
+        skip: (page - 1) * PER_PAGE,
+        take: PER_PAGE,
+        orderBy: { mesReferencia: 'desc' },
+      }),
+      db.aluguel.count({ where }),
+      db.aluguel.aggregate({ where: { status: 'PENDENTE' }, _sum: { valor: true } }),
+    ])
+  })
 
   return (
     <div className="space-y-6">

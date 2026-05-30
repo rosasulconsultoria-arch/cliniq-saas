@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { getTenantDb } from '@/lib/prisma'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { TransacaoForm } from '@/components/financeiro/transacao-form'
@@ -19,11 +21,14 @@ export default async function NovaTransacaoPage(props: Props) {
 
   const backHref = tipo === 'RECEITA' ? '/financeiro/receitas' : tipo === 'DESPESA' ? '/financeiro/despesas' : '/financeiro/investimentos'
 
-  const db = getTenantDb()
-  const [categorias, profissionais] = await Promise.all([
-    db.categoriaFinanceira.findMany({ orderBy: [{ tipo: 'asc' }, { nome: 'asc' }] }),
-    db.profissional.findMany({ where: { ativo: true }, include: { user: { select: { name: true } } }, orderBy: { user: { name: 'asc' } } }),
-  ])
+  const { id: tenantId } = await getCurrentTenant()
+  const [categorias, profissionais] = await runWithTenant(tenantId, async () => {
+    const db = getTenantDb()
+    return Promise.all([
+      db.categoriaFinanceira.findMany({ orderBy: [{ tipo: 'asc' }, { nome: 'asc' }] }),
+      db.profissional.findMany({ where: { ativo: true }, include: { user: { select: { name: true } } }, orderBy: { user: { name: 'asc' } } }),
+    ])
+  })
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
