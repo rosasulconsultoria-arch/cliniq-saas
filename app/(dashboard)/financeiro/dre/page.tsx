@@ -1,5 +1,7 @@
 import { Suspense } from 'react'
 import { getDRE } from '@/lib/relatorios'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { periodoToRange } from '@/lib/periodo-utils'
 import { PeriodoRelatorio } from '@/components/relatorios/periodo-relatorio'
 import { ExportButtons } from '@/components/relatorios/export-buttons'
@@ -27,7 +29,8 @@ export default async function FinanceiroDREPage({ searchParams }: Props) {
   const sp = await searchParams
   const preset = getSearchParam(sp.periodo, 'mes_atual')
   const { inicio, fim } = periodoToRange(preset, getSearchParam(sp.de), getSearchParam(sp.ate))
-  const d = await getDRE(inicio, fim)
+  const { id: tenantId } = await getCurrentTenant()
+  const d = await runWithTenant(tenantId, () => getDRE(inicio, fim))
 
   const csvHref = `/api/relatorios/csv?tipo=dre&inicio=${inicio}&fim=${fim}`
 

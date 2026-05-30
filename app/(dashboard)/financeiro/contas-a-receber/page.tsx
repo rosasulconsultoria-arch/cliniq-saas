@@ -1,4 +1,6 @@
 import { getContasAReceber } from '@/lib/financeiro-receber'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { format, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { formatBRL } from '@/lib/utils'
@@ -9,7 +11,8 @@ import { CalendarClock, Handshake, Building2, Receipt, CreditCard } from 'lucide
 import { InfoTooltip } from '@/components/ui/info-tooltip'
 
 export default async function ContasAReceberPage() {
-  const d = await getContasAReceber()
+  const { id: tenantId } = await getCurrentTenant()
+  const d = await runWithTenant(tenantId, () => getContasAReceber())
 
   const STATUS_LABEL: Record<string, string> = {
     AGENDADO: 'Agendado',

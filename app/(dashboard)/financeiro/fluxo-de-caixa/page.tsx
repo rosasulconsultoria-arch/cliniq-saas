@@ -1,4 +1,6 @@
 import { getFluxoCaixa } from '@/lib/fluxo-caixa'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { periodoToRange } from '@/lib/periodo-utils'
 import { getSearchParam, formatBRL } from '@/lib/utils'
 import { format, parseISO } from 'date-fns'
@@ -18,7 +20,8 @@ export default async function FluxoCaixaPage(props: Props) {
   const searchParams = await props.searchParams;
   const preset = getSearchParam(searchParams.periodo, 'mes_atual')
   const { inicio, fim } = periodoToRange(preset, getSearchParam(searchParams.de), getSearchParam(searchParams.ate))
-  const d = await getFluxoCaixa(inicio, fim)
+  const { id: tenantId } = await getCurrentTenant()
+  const d = await runWithTenant(tenantId, () => getFluxoCaixa(inicio, fim))
 
   const cards = [
     { titulo: 'Saldo Inicial', valor: d.saldoInicial, icon: Wallet, cor: 'text-slate-600', tooltip: 'Saldo acumulado até o início do período selecionado — soma de todas as receitas pagas menos despesas pagas antes dessa data.' },
