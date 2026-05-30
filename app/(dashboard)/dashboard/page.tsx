@@ -112,7 +112,7 @@ export default async function DashboardPage(props: Props) {
                   <div key={a.id} className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="text-sm font-medium truncate">{a.paciente}</p>
-                      <p className="text-xs text-muted-foreground truncate">{a.profissional} · {a.sala}</p>
+                      <p className="text-xs text-muted-foreground truncate">{a.profissional} · {a.local}</p>
                     </div>
                     <div className="shrink-0 text-right">
                       <p className="text-xs font-semibold">{format(parseISO(a.horario), 'HH:mm')}</p>

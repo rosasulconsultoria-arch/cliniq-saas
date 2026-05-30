@@ -14,10 +14,6 @@
 
 ### PRIORIDADE 2 — BUGS FUNCIONAIS/VISUAIS
 
-**[P2.0]** `getOcupacaoPorLocal` em `lib/relatorios.ts` retorna objetos com chave `sala` mas `relatorios/ocupacao/page.tsx` acessa `r.local` — possível bug de renderização vazia (tabela exibe linhas mas campos "Local" ficam em branco). Investigar e alinhar chave retornada com acesso na página. Descoberto durante Sub-lote 8 (Bug 10), fora de escopo naquele momento.
-
----
-
 ### PRIORIDADE 2 — BUGS VISUAIS DE CONVERSÃO em /signup/plano
 
 **[P2.1]** Botão "Começar trial gratuito de 14 dias" vazando dos cards (texto extrapola largura).
@@ -57,6 +53,13 @@
 **[P5.1]** Suíte E2E atual (231 testes) não exercita o render pipeline real do Next.js. Bugs de ALS context, RSC rendering, e ciclo HTTP completo (login, signup) passam despercebidos.
 - Mitigação atual: smoke test manual
 - Solução longo prazo: adicionar Playwright ou Next.js test mode para testes HTTP reais que renderizem pages
+
+---
+
+### CONTEXTO DA SESSÃO 2026-05-30 (Bug 10 + Bug 11)
+
+Bug 10 (ALS context em RSC pipeline) — corrigido em 8 sub-lotes, 44 arquivos, commits 84f5b32..e4f8107.
+Bug 11 (refatoração Sala→Local incompleta) — descoberto no smoke test manual pós-Bug 10. Corrigido. 3 arquivos, 5 linhas. Commit imediatamente após Sub-lote 8.
 
 ---
 

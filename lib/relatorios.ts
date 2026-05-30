@@ -52,7 +52,7 @@ export async function getFaturamentoPorLocal(ini: string, fi: string) {
   const salas = await db.local.findMany({ where: { id: { in: localIds } } })
   const map = Object.fromEntries(salas.map(s => [s.id, s.nome]))
   return grupos.map(g => ({
-    sala: map[g.localId] ?? g.localId,
+    local: map[g.localId] ?? g.localId,
     consultas: g._count.id,
     faturamento: Number(g._sum.valor ?? 0),
   })).sort((a, b) => b.faturamento - a.faturamento)
@@ -153,7 +153,7 @@ export async function getOcupacaoPorLocal(ini: string, fi: string) {
       ])
       const slotsTotal = dias * 14
       const taxa = slotsTotal > 0 ? (total / slotsTotal) * 100 : 0
-      return { sala: local.nome, agendado: total, realizado, slotsTotal, taxa }
+      return { local: local.nome, agendado: total, realizado, slotsTotal, taxa }
     })
   )
   return resultado.sort((a, b) => b.taxa - a.taxa)

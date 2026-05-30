@@ -208,7 +208,7 @@ export async function getDashboardListas() {
       include: {
         profissional: { include: { user: { select: { name: true } } } },
         paciente: { select: { nome: true } },
-        sala: { select: { nome: true } },
+        local: { select: { nome: true } },
       },
       orderBy: { dataHoraInicio: 'asc' },
       take: 5,
@@ -241,7 +241,7 @@ export async function getDashboardListas() {
       horario: a.dataHoraInicio.toISOString(),
       paciente: a.paciente.nome,
       profissional: a.profissional.user.name,
-      sala: a.sala.nome,
+      local: a.local.nome,
       status: a.status,
     })),
     topProfissionais: topProfissionais.map(r => ({
