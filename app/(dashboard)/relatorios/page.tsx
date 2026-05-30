@@ -4,6 +4,8 @@ import { ptBR } from 'date-fns/locale'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { getFaturamentoPorPeriodo } from '@/lib/relatorios'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { periodoToRange } from '@/lib/periodo-utils'
 import { PeriodoRelatorio } from '@/components/relatorios/periodo-relatorio'
 import { ExportButtons } from '@/components/relatorios/export-buttons'
@@ -15,7 +17,8 @@ export default async function RelatorioFaturamentoPage(props: Props) {
   const searchParams = await props.searchParams;
   const preset = getSearchParam(searchParams.periodo, 'mes_atual')
   const { inicio, fim } = periodoToRange(preset, getSearchParam(searchParams.de), getSearchParam(searchParams.ate))
-  const dados = await getFaturamentoPorPeriodo(inicio, fim)
+  const { id: tenantId } = await getCurrentTenant()
+  const dados = await runWithTenant(tenantId, () => getFaturamentoPorPeriodo(inicio, fim))
 
   const total = dados.reduce((s, r) => s + r.valor, 0)
   const pago = dados.filter(r => r.status === 'PAGO').reduce((s, r) => s + r.valor, 0)

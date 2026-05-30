@@ -1,5 +1,7 @@
 import { Suspense } from 'react'
 import { getFaturamentoPorLocal } from '@/lib/relatorios'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { periodoToRange } from '@/lib/periodo-utils'
 import { PeriodoRelatorio } from '@/components/relatorios/periodo-relatorio'
 import { ExportButtons } from '@/components/relatorios/export-buttons'
@@ -13,7 +15,8 @@ export default async function RelatorioPorLocalPage(props: Props) {
   const searchParams = await props.searchParams;
   const preset = getSearchParam(searchParams.periodo, 'mes_atual')
   const { inicio, fim } = periodoToRange(preset, getSearchParam(searchParams.de), getSearchParam(searchParams.ate))
-  const dados = await getFaturamentoPorLocal(inicio, fim)
+  const { id: tenantId } = await getCurrentTenant()
+  const dados = await runWithTenant(tenantId, () => getFaturamentoPorLocal(inicio, fim))
   const maxFat = Math.max(...dados.map(d => d.faturamento), 1)
 
   const csvHref = `/api/relatorios/csv?tipo=por-local&inicio=${inicio}&fim=${fim}`

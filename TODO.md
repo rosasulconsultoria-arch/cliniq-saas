@@ -12,6 +12,12 @@
 
 ---
 
+### PRIORIDADE 2 — BUGS FUNCIONAIS/VISUAIS
+
+**[P2.0]** `getOcupacaoPorLocal` em `lib/relatorios.ts` retorna objetos com chave `sala` mas `relatorios/ocupacao/page.tsx` acessa `r.local` — possível bug de renderização vazia (tabela exibe linhas mas campos "Local" ficam em branco). Investigar e alinhar chave retornada com acesso na página. Descoberto durante Sub-lote 8 (Bug 10), fora de escopo naquele momento.
+
+---
+
 ### PRIORIDADE 2 — BUGS VISUAIS DE CONVERSÃO em /signup/plano
 
 **[P2.1]** Botão "Começar trial gratuito de 14 dias" vazando dos cards (texto extrapola largura).

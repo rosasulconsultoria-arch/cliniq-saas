@@ -1,4 +1,6 @@
 import { getPacientesAtivos } from '@/lib/relatorios'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { ExportButtons } from '@/components/relatorios/export-buttons'
 import { formatBRL } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -6,7 +8,8 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recha
 import { PacientesChart } from '@/components/relatorios/pacientes-chart'
 
 export default async function RelatorioPacientesPage() {
-  const d = await getPacientesAtivos()
+  const { id: tenantId } = await getCurrentTenant()
+  const d = await runWithTenant(tenantId, () => getPacientesAtivos())
 
   const cards = [
     { titulo: 'Total de Cadastros', valor: d.totalCadastros, cor: 'text-blue-600' },

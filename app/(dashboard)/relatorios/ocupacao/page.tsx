@@ -1,5 +1,7 @@
 import { Suspense } from 'react'
 import { getOcupacaoPorLocal } from '@/lib/relatorios'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { periodoToRange } from '@/lib/periodo-utils'
 import { PeriodoRelatorio } from '@/components/relatorios/periodo-relatorio'
 import { ExportButtons } from '@/components/relatorios/export-buttons'
@@ -14,7 +16,8 @@ export default async function RelatorioOcupacaoPage(props: Props) {
   const searchParams = await props.searchParams;
   const preset = getSearchParam(searchParams.periodo, 'mes_atual')
   const { inicio, fim } = periodoToRange(preset, getSearchParam(searchParams.de), getSearchParam(searchParams.ate))
-  const dados = await getOcupacaoPorLocal(inicio, fim)
+  const { id: tenantId } = await getCurrentTenant()
+  const dados = await runWithTenant(tenantId, () => getOcupacaoPorLocal(inicio, fim))
 
   const csvHref = `/api/relatorios/csv?tipo=ocupacao&inicio=${inicio}&fim=${fim}`
 
