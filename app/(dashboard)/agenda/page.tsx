@@ -1,21 +1,26 @@
 import { startOfWeek, endOfWeek } from 'date-fns'
 import { auth } from '@/lib/auth'
 import { getTenantDb } from '@/lib/prisma'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { CalendarContainer } from '@/components/agenda/calendar-container'
 
 export default async function AgendaPage() {
   const session = await auth()
-  const db = getTenantDb()
   const hoje = new Date()
   const inicio = startOfWeek(hoje, { weekStartsOn: 1 })
   const fim = endOfWeek(hoje, { weekStartsOn: 1 })
+  const { id: tenantId } = await getCurrentTenant()
 
   // Profissional logado: vê apenas a própria agenda
   let userProfissionalId: string | undefined
   if (session?.user?.role === 'PROFISSIONAL') {
-    const prof = await db.profissional.findUnique({
-      where: { userId: session.user.id },
-      select: { id: true },
+    const prof = await runWithTenant(tenantId, async () => {
+      const db = getTenantDb()
+      return db.profissional.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      })
     })
     userProfissionalId = prof?.id
   }
@@ -24,27 +29,30 @@ export default async function AgendaPage() {
     dataHoraInicio: { gte: inicio, lte: fim },
   }
 
-  const [agendamentos, profissionais, locais] = await Promise.all([
-    db.agendamento.findMany({
-      where,
-      include: {
-        profissional: { include: { user: { select: { name: true } } } },
-        paciente: { select: { id: true, nome: true, email: true, telefone: true } },
-        local: { select: { id: true, nome: true } },
-      },
-      orderBy: { dataHoraInicio: 'asc' },
-    }),
-    db.profissional.findMany({
-      where: { ativo: true },
-      include: { user: { select: { name: true } } },
-      orderBy: { user: { name: 'asc' } },
-    }),
-    db.local.findMany({
-      where: { ativa: true },
-      select: { id: true, nome: true },
-      orderBy: { nome: 'asc' },
-    }),
-  ])
+  const [agendamentos, profissionais, locais] = await runWithTenant(tenantId, async () => {
+    const db = getTenantDb()
+    return Promise.all([
+      db.agendamento.findMany({
+        where,
+        include: {
+          profissional: { include: { user: { select: { name: true } } } },
+          paciente: { select: { id: true, nome: true, email: true, telefone: true } },
+          local: { select: { id: true, nome: true } },
+        },
+        orderBy: { dataHoraInicio: 'asc' },
+      }),
+      db.profissional.findMany({
+        where: { ativo: true },
+        include: { user: { select: { name: true } } },
+        orderBy: { user: { name: 'asc' } },
+      }),
+      db.local.findMany({
+        where: { ativa: true },
+        select: { id: true, nome: true },
+        orderBy: { nome: 'asc' },
+      }),
+    ])
+  })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const agendamentosSerializados = (agendamentos as any[]).map((a) => ({

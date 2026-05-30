@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { Plus, Pencil, DoorOpen } from 'lucide-react'
 import { startOfMonth, endOfMonth } from 'date-fns'
 import { getTenantDb } from '@/lib/prisma'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -30,28 +32,31 @@ export default async function LocaisPage(props: Props) {
   const inicio = startOfMonth(new Date())
   const fim = endOfMonth(new Date())
 
-  const db = getTenantDb()
-  const [dados, total] = await Promise.all([
-    db.local.findMany({
-      where,
-      include: {
-        _count: {
-          select: {
-            agendamentos: {
-              where: {
-                dataHoraInicio: { gte: inicio, lte: fim },
-                status: { notIn: ['CANCELADO', 'FALTOU'] },
+  const { id: tenantId } = await getCurrentTenant()
+  const [dados, total] = await runWithTenant(tenantId, async () => {
+    const db = getTenantDb()
+    return Promise.all([
+      db.local.findMany({
+        where,
+        include: {
+          _count: {
+            select: {
+              agendamentos: {
+                where: {
+                  dataHoraInicio: { gte: inicio, lte: fim },
+                  status: { notIn: ['CANCELADO', 'FALTOU'] },
+                },
               },
             },
           },
         },
-      },
-      skip: (page - 1) * PER_PAGE,
-      take: PER_PAGE,
-      orderBy: { nome: 'asc' },
-    }),
-    db.local.count({ where }),
-  ])
+        skip: (page - 1) * PER_PAGE,
+        take: PER_PAGE,
+        orderBy: { nome: 'asc' },
+      }),
+      db.local.count({ where }),
+    ])
+  })
 
   return (
     <div className="space-y-6">

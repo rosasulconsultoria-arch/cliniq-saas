@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, CalendarRange } from 'lucide-react'
 import { getTenantDb } from '@/lib/prisma'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { Button } from '@/components/ui/button'
 import { ReservasView } from '@/components/locais/reservas-view'
 import { TIPO_LOCAL_ICONS, TIPO_LOCAL_LABELS } from '@/lib/schemas/local'
@@ -12,21 +14,23 @@ interface Props {
 
 export default async function ReservasLocalPage(props: Props) {
   const params = await props.params;
-  const db = getTenantDb()
-
-  const [local, profissionais, reservas] = await Promise.all([
-    db.local.findUnique({ where: { id: params.id } }),
-    db.profissional.findMany({
-      where: { ativo: true },
-      include: { user: true },
-      orderBy: { user: { name: 'asc' } },
-    }),
-    db.reservaLocal.findMany({
-      where: { localId: params.id },
-      include: { profissional: { include: { user: true } } },
-      orderBy: [{ diaSemana: 'asc' }, { horaInicio: 'asc' }],
-    }),
-  ])
+  const { id: tenantId } = await getCurrentTenant()
+  const [local, profissionais, reservas] = await runWithTenant(tenantId, async () => {
+    const db = getTenantDb()
+    return Promise.all([
+      db.local.findUnique({ where: { id: params.id } }),
+      db.profissional.findMany({
+        where: { ativo: true },
+        include: { user: true },
+        orderBy: { user: { name: 'asc' } },
+      }),
+      db.reservaLocal.findMany({
+        where: { localId: params.id },
+        include: { profissional: { include: { user: true } } },
+        orderBy: [{ diaSemana: 'asc' }, { horaInicio: 'asc' }],
+      }),
+    ])
+  })
 
   if (!local) notFound()
 

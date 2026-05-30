@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, CalendarRange } from 'lucide-react'
 import { getTenantDb } from '@/lib/prisma'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { LocalForm } from '@/components/locais/form'
@@ -12,8 +14,11 @@ interface Props {
 
 export default async function EditarLocalPage(props: Props) {
   const params = await props.params;
-  const db = getTenantDb()
-  const local = await db.local.findUnique({ where: { id: params.id } })
+  const { id: tenantId } = await getCurrentTenant()
+  const local = await runWithTenant(tenantId, async () => {
+    const db = getTenantDb()
+    return db.local.findUnique({ where: { id: params.id } })
+  })
   if (!local) notFound()
 
   return (
