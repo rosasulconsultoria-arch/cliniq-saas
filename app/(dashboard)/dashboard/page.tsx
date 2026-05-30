@@ -8,7 +8,8 @@ import { DashboardChartsClient } from '@/components/dashboard/DashboardChartsCli
 import { PeriodFilter } from '@/components/dashboard/period-filter'
 import { auth } from '@/lib/auth'
 import { getTenantDb } from '@/lib/prisma'
-import { getTenantId } from '@/lib/tenant-context'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { ProfissionalDashboard } from '@/components/dashboard/profissional-dashboard'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -24,13 +25,15 @@ interface Props {
 export default async function DashboardPage(props: Props) {
   const searchParams = await props.searchParams;
   const session = await auth()
-  const db = getTenantDb()
-  const tenantId = getTenantId()
+  const { id: tenantId } = await getCurrentTenant()
 
   if (session?.user?.role === 'PROFISSIONAL') {
-    const profissional = await db.profissional.findUnique({
-      where: { userId: session.user.id! },
-      include: { user: { select: { name: true } } },
+    const profissional = await runWithTenant(tenantId, async () => {
+      const db = getTenantDb()
+      return db.profissional.findUnique({
+        where: { userId: session.user.id! },
+        include: { user: { select: { name: true } } },
+      })
     })
     if (profissional) {
       return <ProfissionalDashboard profissionalId={profissional.id} nome={profissional.user.name} />
@@ -42,26 +45,29 @@ export default async function DashboardPage(props: Props) {
   const ate = getSearchParam(searchParams.ate)
   const { inicio, fim, inicioAnterior, fimAnterior, label } = getPeriodDates(periodo, de, ate)
 
-  const [kpis, charts, listas, topServicos] = await Promise.all([
-    getDashboardKPIs(inicio.toISOString(), fim.toISOString(), inicioAnterior.toISOString(), fimAnterior.toISOString()),
-    getDashboardCharts(inicio.toISOString(), fim.toISOString()),
-    getDashboardListas(),
-    // AgendamentoServico é SKIP_TENANT — Padrão 2: filtrar via agendamento.tenantId
-    db.agendamentoServico.findMany({
-      where: {
-        agendamento: { dataHoraInicio: { gte: inicio, lte: fim }, status: { notIn: ['CANCELADO'] }, tenantId },
-      },
-      include: { servico: { select: { nome: true } } },
-    }).then(rows => {
-      const counts: Record<string, { nome: string; count: number }> = {}
-      for (const r of rows) {
-        const k = r.servicoId
-        counts[k] = counts[k] ?? { nome: r.servico.nome, count: 0 }
-        counts[k].count++
-      }
-      return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 5)
-    }),
-  ])
+  const [kpis, charts, listas, topServicos] = await runWithTenant(tenantId, async () => {
+    const db = getTenantDb()
+    return Promise.all([
+      getDashboardKPIs(inicio.toISOString(), fim.toISOString(), inicioAnterior.toISOString(), fimAnterior.toISOString()),
+      getDashboardCharts(inicio.toISOString(), fim.toISOString()),
+      getDashboardListas(),
+      // AgendamentoServico é SKIP_TENANT — Padrão 2: filtrar via agendamento.tenantId
+      db.agendamentoServico.findMany({
+        where: {
+          agendamento: { dataHoraInicio: { gte: inicio, lte: fim }, status: { notIn: ['CANCELADO'] }, tenantId },
+        },
+        include: { servico: { select: { nome: true } } },
+      }).then(rows => {
+        const counts: Record<string, { nome: string; count: number }> = {}
+        for (const r of rows) {
+          const k = r.servicoId
+          counts[k] = counts[k] ?? { nome: r.servico.nome, count: 0 }
+          counts[k].count++
+        }
+        return Object.values(counts).sort((a, b) => b.count - a.count).slice(0, 5)
+      }),
+    ])
+  })
 
   const STATUS_COLORS: Record<string, string> = {
     AGENDADO: 'border-blue-400 text-blue-600',

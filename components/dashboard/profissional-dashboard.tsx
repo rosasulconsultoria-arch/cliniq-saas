@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatBRL } from '@/lib/utils'
 import { getDashboardProfissional } from '@/lib/dashboard-profissional'
+import { getCurrentTenant } from '@/lib/tenant-header'
+import { runWithTenant } from '@/lib/tenant-context'
 import {
   TrendingUp,
   CalendarCheck,
@@ -34,8 +36,12 @@ interface Props {
   nome: string
 }
 
+// ProfissionalDashboard é async Server Component renderizado como filho de dashboard/page.
+// React 19 RSC pipeline renderiza este componente em novo contexto async — ALS do parent
+// não propaga. Resolve próprio tenant via getCurrentTenant() (mesmo padrão de TrialBanner).
 export async function ProfissionalDashboard({ profissionalId, nome }: Props) {
-  const d = await getDashboardProfissional(profissionalId)
+  const { id: tenantId } = await getCurrentTenant()
+  const d = await runWithTenant(tenantId, () => getDashboardProfissional(profissionalId))
 
   const kpis: { titulo: string; valor: string; sub: string; icon: typeof TrendingUp; cor: string; bg: string; tooltip?: string }[] = [
     {
