@@ -46,3 +46,7 @@ create-admin.mjs
 nul
 
 dev-server.log
+
+# Artefatos locais de tooling
+.playwright-mcp/
+docs/superpowers/
