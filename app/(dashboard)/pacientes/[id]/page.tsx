@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { getTenantDb } from '@/lib/prisma'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { PacienteForm } from '@/components/pacientes/form'
@@ -14,8 +16,11 @@ interface Props {
 
 export default async function EditarPacientePage(props: Props) {
   const params = await props.params;
-  const db = getTenantDb()
-  const paciente = await db.paciente.findUnique({ where: { id: params.id } })
+  const { id: tenantId } = await getCurrentTenant()
+  const paciente = await runWithTenant(tenantId, async () => {
+    const db = getTenantDb()
+    return db.paciente.findUnique({ where: { id: params.id } })
+  })
   if (!paciente) notFound()
 
   const defaultValues = {

@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { getTenantDb } from '@/lib/prisma'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { UsuarioForm } from '@/components/usuarios/form'
@@ -12,10 +14,13 @@ interface Props {
 
 export default async function EditarUsuarioPage(props: Props) {
   const params = await props.params;
-  const db = getTenantDb()
-  const usuario = await db.user.findUnique({
-    where: { id: params.id },
-    select: { id: true, name: true, email: true, role: true, active: true },
+  const { id: tenantId } = await getCurrentTenant()
+  const usuario = await runWithTenant(tenantId, async () => {
+    const db = getTenantDb()
+    return db.user.findUnique({
+      where: { id: params.id },
+      select: { id: true, name: true, email: true, role: true, active: true },
+    })
   })
   if (!usuario) notFound()
 

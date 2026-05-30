@@ -2,6 +2,8 @@ import { Suspense } from 'react'
 import Link from 'next/link'
 import { Plus, Pencil, Users } from 'lucide-react'
 import { getTenantDb } from '@/lib/prisma'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -38,16 +40,19 @@ export default async function UsuariosPage(props: Props) {
     ...(roleFilter ? { role: roleFilter as any } : {}),
   }
 
-  const db = getTenantDb()
-  const [dados, total] = await Promise.all([
-    db.user.findMany({
-      where,
-      skip: (page - 1) * PER_PAGE,
-      take: PER_PAGE,
-      orderBy: { name: 'asc' },
-    }),
-    db.user.count({ where }),
-  ])
+  const { id: tenantId } = await getCurrentTenant()
+  const [dados, total] = await runWithTenant(tenantId, async () => {
+    const db = getTenantDb()
+    return Promise.all([
+      db.user.findMany({
+        where,
+        skip: (page - 1) * PER_PAGE,
+        take: PER_PAGE,
+        orderBy: { name: 'asc' },
+      }),
+      db.user.count({ where }),
+    ])
+  })
 
   return (
     <div className="space-y-6">

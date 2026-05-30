@@ -2,6 +2,8 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft } from 'lucide-react'
 import { getTenantDb } from '@/lib/prisma'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Button } from '@/components/ui/button'
@@ -23,32 +25,35 @@ interface Props {
 
 export default async function EditarProfissionalPage(props: Props) {
   const params = await props.params;
-  const db = getTenantDb()
-  const [profissional, comissoes, alugueis, parcelamentos] = await Promise.all([
-    db.profissional.findUnique({
-      where: { id: params.id },
-      include: {
-        user: { select: { name: true, email: true } },
-        disponibilidades: { orderBy: { diaSemana: 'asc' } },
-        bloqueios: { orderBy: { dataHoraInicio: 'desc' }, take: 20 },
-      },
-    }),
-    db.comissao.findMany({
-      where: { profissionalId: params.id },
-      include: { agendamento: { select: { dataHoraInicio: true, paciente: { select: { nome: true } } } } },
-      orderBy: { agendamento: { dataHoraInicio: 'desc' } },
-      take: 20,
-    }),
-    db.aluguel.findMany({
-      where: { profissionalId: params.id },
-      orderBy: { mesReferencia: 'desc' },
-    }),
-    db.parcelamento.findMany({
-      where: { profissionalId: params.id },
-      include: { parcelas: { orderBy: { numero: 'asc' } } },
-      orderBy: { createdAt: 'desc' },
-    }),
-  ])
+  const { id: tenantId } = await getCurrentTenant()
+  const [profissional, comissoes, alugueis, parcelamentos] = await runWithTenant(tenantId, async () => {
+    const db = getTenantDb()
+    return Promise.all([
+      db.profissional.findUnique({
+        where: { id: params.id },
+        include: {
+          user: { select: { name: true, email: true } },
+          disponibilidades: { orderBy: { diaSemana: 'asc' } },
+          bloqueios: { orderBy: { dataHoraInicio: 'desc' }, take: 20 },
+        },
+      }),
+      db.comissao.findMany({
+        where: { profissionalId: params.id },
+        include: { agendamento: { select: { dataHoraInicio: true, paciente: { select: { nome: true } } } } },
+        orderBy: { agendamento: { dataHoraInicio: 'desc' } },
+        take: 20,
+      }),
+      db.aluguel.findMany({
+        where: { profissionalId: params.id },
+        orderBy: { mesReferencia: 'desc' },
+      }),
+      db.parcelamento.findMany({
+        where: { profissionalId: params.id },
+        include: { parcelas: { orderBy: { numero: 'asc' } } },
+        orderBy: { createdAt: 'desc' },
+      }),
+    ])
+  })
 
   if (!profissional) notFound()
 
