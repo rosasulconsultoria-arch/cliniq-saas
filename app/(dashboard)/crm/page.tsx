@@ -1,5 +1,7 @@
 import { getCrmPacientes, getCrmStats } from './actions'
 import { getTenantDb } from '@/lib/prisma'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -16,11 +18,14 @@ export default async function CrmPage({ searchParams }: Props) {
   const filtroCidade = typeof sp.cidade === 'string' ? sp.cidade : undefined
   const filtroServico = typeof sp.servico === 'string' ? sp.servico : undefined
 
-  const db = getTenantDb()
+  const { id: tenantId } = await getCurrentTenant()
   const [pacientes, stats, servicos] = await Promise.all([
     getCrmPacientes({ cidade: filtroCidade, servicoId: filtroServico }),
     getCrmStats(),
-    db.servico.findMany({ where: { ativo: true }, orderBy: { nome: 'asc' } }),
+    runWithTenant(tenantId, async () => {
+      const db = getTenantDb()
+      return db.servico.findMany({ where: { ativo: true }, orderBy: { nome: 'asc' } })
+    }),
   ])
 
   return (

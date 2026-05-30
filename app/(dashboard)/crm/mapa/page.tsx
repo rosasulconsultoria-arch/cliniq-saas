@@ -1,12 +1,17 @@
 import { getCrmPacientes } from '../actions'
 import { getTenantDb } from '@/lib/prisma'
+import { runWithTenant } from '@/lib/tenant-context'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { MapaClient } from './MapaClient'
 
 export default async function CrmMapaPage() {
-  const db = getTenantDb()
+  const { id: tenantId } = await getCurrentTenant()
   const [pacientes, config] = await Promise.all([
     getCrmPacientes(),
-    db.configClinica.findFirst(),
+    runWithTenant(tenantId, async () => {
+      const db = getTenantDb()
+      return db.configClinica.findFirst()
+    }),
   ])
 
   return (
