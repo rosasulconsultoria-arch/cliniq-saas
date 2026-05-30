@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/lib/auth'
-import { getTenantDb } from '@/lib/prisma'
+import { db } from '@/lib/db'
+import { getCurrentTenant } from '@/lib/tenant-header'
 import { DashboardShell } from '@/components/layout/dashboard-shell'
 import { TrialBanner } from '@/components/billing/TrialBanner'
 import { PostSignupTour } from '@/components/onboarding/PostSignupTour'
@@ -20,8 +21,8 @@ export default async function DashboardLayout({
     redirect('/trocar-senha')
   }
 
-  const db = getTenantDb()
-  const config = await db.configClinica.findFirst()
+  const { id: tenantId } = await getCurrentTenant()
+  const config = await db.configClinica.findFirst({ where: { tenantId } })
 
   return (
     <>

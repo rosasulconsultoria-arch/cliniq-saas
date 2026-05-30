@@ -34,16 +34,17 @@ export async function PostSignupTour() {
   if (!tenantFull || tenantFull.tourCompleted) return null
 
   // Busca contagens no banco do tenant
-  const tenantDb = getTenantDb()
   const [config, profissionaisCount, locaisCount, pacientesCount] = await runWithTenant(
     tenant.id,
-    () =>
-      Promise.all([
+    () => {
+      const tenantDb = getTenantDb()
+      return Promise.all([
         tenantDb.configClinica.findFirst({ select: { logoBase64: true } }),
         tenantDb.profissional.count(),
         tenantDb.local.count(),
         tenantDb.paciente.count(),
       ])
+    }
   )
 
   const items: TourItem[] = [
