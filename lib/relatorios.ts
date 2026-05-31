@@ -146,10 +146,10 @@ export async function getOcupacaoPorLocal(ini: string, fi: string) {
   const dias = Math.max(1, Math.ceil((fim.getTime() - inicio.getTime()) / 86400000))
   const salas = await db.local.findMany({ where: { ativa: true } })
   const resultado = await Promise.all(
-    salas.map(async (sala) => {
+    salas.map(async (local) => {
       const [total, realizado] = await Promise.all([
-        db.agendamento.count({ where: { localId: sala.id, dataHoraInicio: { gte: inicio, lte: fim }, status: { notIn: ['CANCELADO'] } } }),
-        db.agendamento.count({ where: { localId: sala.id, dataHoraInicio: { gte: inicio, lte: fim }, status: 'REALIZADO' } }),
+        db.agendamento.count({ where: { localId: local.id, dataHoraInicio: { gte: inicio, lte: fim }, status: { notIn: ['CANCELADO'] } } }),
+        db.agendamento.count({ where: { localId: local.id, dataHoraInicio: { gte: inicio, lte: fim }, status: 'REALIZADO' } }),
       ])
       const slotsTotal = dias * 14
       const taxa = slotsTotal > 0 ? (total / slotsTotal) * 100 : 0
