@@ -37,6 +37,8 @@
 
 ### PRIORIDADE 3 — BUGS DE INFRAESTRUTURA
 
+**[P3.0]** `lib/pdf-client.ts` — função `downloadRelatorioPDF` virou dead code após Bug 14 fix (export PDF migrado para endpoint server-side `/api/relatorios/pdf`). Removível em cleanup futuro junto com bundle de `jspdf`/`jspdf-autotable` do `package.json` (redução de bundle client-side).
+
 **[P3.1]** Link do email de verificação aponta hardcoded para `localhost:3000`. Quando dev rodando em outra porta (ex: 3002 quando 3000 ocupada), link quebra.
 - Solução: usar variável env `BASE_URL` ou detectar porta do request
 
