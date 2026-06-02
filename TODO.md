@@ -24,6 +24,15 @@
 
 **[P2.4]** Cards com larguras/alturas inconsistentes (Básico mais estreito que os outros).
 
+**[P2.5]** Bug 13 — `/crm/mapa`: "Map container is already initialized"
+- **Local:** `components/crm/crm-mapa.tsx:83`, dentro de `CrmMapa`
+- **Reprodução:** login → `/crm/mapa` → erro aparece imediatamente, persiste após Ctrl+F5
+- **Causa provável:** Leaflet inicializa `MapContainer` duas vezes (React StrictMode + HMR + ausência de cleanup no `useEffect`)
+- **NÃO é regressão do Bug 10/11/12** — bug pré-existente no cliniq-saas que nunca foi exercitado em smoke
+- Funciona no projeto original Neuroconexão (clinica-psi) — diferença a investigar
+- Comportamento em produção (`npm run build && start`) não testado
+- **Fix proposto:** investigar diff entre projetos, adicionar cleanup do mapa no `useEffect`, considerar `key={pathname}` no `MapContainer`
+
 ---
 
 ### PRIORIDADE 3 — BUGS DE INFRAESTRUTURA
